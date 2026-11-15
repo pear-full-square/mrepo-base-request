@@ -70,7 +70,9 @@ setting.
 - **Inside, a URI is an array of segments**: in the form, the prefix
   where the writer stands, then the URI as written. From outside
   (`OUTSIDE`) that is the prefix `main` and one segment: `host` is
-  `["main", "host"]`, no URI `["main", "."]`. The mrepo's own (`OWN`)
+  `["main", "host"]`, no URI `["main", "."]`; a command executed at a
+  position in `main` (`haicc`'s `goto`) stands there, the position a
+  segment between: `["main", "swarms/swarm-1", "."]`. The mrepo's own (`OWN`)
   have no prefix: `["."]`, `["runtime/hooks"]`. Outside, a URI is one
   segment, as it is written: a form given filled in carries it so. The
   URI functions are `mycelium-uri`'s, offered here too: `relative`,
