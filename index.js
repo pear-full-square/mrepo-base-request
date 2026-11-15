@@ -27,7 +27,8 @@
 import { existsSync, readFileSync } from 'bare-fs'
 import { join } from 'bare-path'
 import { post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX } from './lib/boxes.js'
-import { record, wrap, guid, complete, isComplete, logger, LEVELS } from './lib/record.js'
+import { record, wrap, guid, complete, isComplete, logger, LEVELS, ALWAYS, DETAIL } from './lib/record.js'
+import { FLAGS, flagsOf, sorted } from './lib/flags.js'
 import { layer, AUTHOR } from './lib/layer.js'
 import { viewOf, gitdirOf, setting, isWork, SETTING } from './lib/view.js'
 import { relative, from, within, slashed, unslashed, segmented, joined, positionOf } from 'mycelium-uri'
@@ -35,7 +36,7 @@ import { interpret, formOf, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
 import { hooks, hooksAt, TRANSITIONS } from './lib/hooks.js'
 
 export { follow } from './lib/follow.js'
-export { post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX, record, wrap, guid, complete, isComplete, logger, LEVELS, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hooks, hooksAt, TRANSITIONS }
+export { post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX, record, wrap, guid, complete, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, flagsOf, sorted, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hooks, hooksAt, TRANSITIONS }
 
 export const PENDING = 'request/pending/default'
 export const EXECUTE = 'request/execute'
@@ -47,9 +48,15 @@ export const DONE = 'request/done'
 // and the active ones: those with their file in the protocols layer
 // (/protocols/<protocol>.json, written by protocol/activate), by name.
 export async function runtimeData ({ repo, protocols = null }) {
-  const read = async p => { try { return JSON.parse((await repo.read(p)).toString()) } catch { return null } }
+  // a document that may not be there: null then; one that is there and is
+  // no document is an error (said as the request's: runtime data: ...)
+  const read = async p => {
+    const bytes = await repo.find(p)
+    if (bytes === null) return null
+    try { return JSON.parse(bytes.toString()) } catch (err) { throw new Error(`not a document: ${p}`, { cause: err }) }
+  }
   const active = {}
-  for (const [p] of await Promise.resolve().then(() => repo.select('/protocols/*')).catch(() => [])) {
+  for (const [p] of await repo.select('/protocols/*')) {
     const name = p.slice(p.lastIndexOf('/') + 1)
     if (name.endsWith('.json') && name !== 'layer.json') active[name.slice(0, -5)] = await read(p) ?? {}
   }
@@ -276,6 +283,7 @@ export async function request (ctx) {
     const here = `/${ctx.uri ?? ctx.name}${INBOX}`
     for (const name of await untaken(ctx)) {
       let envelope = null
+      // catch: a record that does not read is no request: refused below, as one that is none
       try { envelope = await box.read(name) } catch {}
       // misdelivered: the envelope's, before its content is looked at
       if (envelope && envelope.topic !== here) {

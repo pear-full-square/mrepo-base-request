@@ -17,5 +17,7 @@ The tests of mrepo-base-request, a section per file, each test by its name.
 - check: the service's own actions, each in its state
 - check at the inbox: neither the activation nor the state (the queue may change them first)
 - hooks: the commands of a transition, files in its folder, in name order
+- flags: written with a command, a list in front closed by --, or after its words to the end or --
+- the log: three levels of detail, info without asking; an error and a warning always
 - a record: topic, key, timestamp, headers (empty), value; the onion; a form completed
 - check: an internal request, the mrepo's own: not asked whether active; an action that names its states still by them
