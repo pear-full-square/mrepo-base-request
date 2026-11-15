@@ -37,9 +37,11 @@ setting.
   `inbox` head moves; answers committed into `outbox`, then written into
   the outbox folder (`outboxOf(dir)`, made at build, watchable from the
   start); nothing removed. An mrepo by its directory: `inboxOf(dir)`.
-- **Logs and following**: `logger(threshold)` (`log(level, event, data)`,
-  levels `error`, `warn`, `info`, `debug`; the entries into the completed
-  form, `complete(core, result, entries)`); `follow({ dir, name })` prints
+- **Logs and following**: `logger(detail)` (`log(level, event, data)`;
+  `error` and `warn` always kept, of `info`, `verbose`, `debug` as much
+  as `detail` says, `info` by default; `level(to)` sets it from there on;
+  the entries into the completed form, `complete(core, result,
+  entries)`); `follow({ dir, name })` prints
   each record as it arrives in an mrepo's request layers and its children's
   in view, one compact line a record, its topic the full path; `settled()`:
   every request done (none pending or executing in any of them).
@@ -50,6 +52,16 @@ setting.
   its way into pending (`interpret(command, protocols, at)`, `formOf`):
   the protocol alone takes its default action (its config's `default`).
   The command stays in the form, beside what it was interpreted as.
+- **Flags** (`lib/flags.js`): written with a command after `--flags`,
+  space separated, a flag alone or `key=value`; a list in front of the
+  command, closed by `--`, or after its words, to the end or to `--`. In
+  the form a map, `flags`, there only when one was written or came with
+  the request (a command sent on brings the sender's: a flag holds
+  through a chain until changed). The words after the URI of an action
+  that passes them on (its config: `command: true`) are left as written.
+  `FLAGS`: the flags there are, each with the values it takes (`log`:
+  `info`, `verbose`, `debug`); `sorted(flags)`: those, and the ones
+  ignored, each with why.
 - **A request's URI is relative**: no leading slash, as written where
   its writer stands. `.` is the position itself, and so is none given;
   `./x` is `x`. From outside the writer stands at `main` (`MAIN`), so the

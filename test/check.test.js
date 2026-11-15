@@ -1,5 +1,5 @@
 import test from 'brittle'
-import { check, matches, missing, hooks, record, wrap, guid, complete, isComplete, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
+import { check, matches, missing, hooks, record, wrap, guid, complete, isComplete, logger, LEVELS, FLAGS, flagsOf, sorted, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
 
 // The protocols as a runtime loaded them: each action's URIs (patterns
 // written at main, where the outside stands), and the states that allow it
@@ -139,10 +139,58 @@ test('hooks: the commands of a transition, files in its folder, in name order', 
   }
   t.alike(await hooks(reader, 'boot'), [{ name: 'a-activate', command: ['protocol/activate', '.', 'help'] }, { name: 'b-help', command: ['help/extract'] }], 'each file a command, its parts; by name')
   t.alike(await hooks(reader, 'stop'), [], 'none dropped in: none')
-  t.alike(await hooks({ select: async () => { throw new Error('no layer') }, read: reader.read }, 'boot'), [], 'no runtime layer: none')
+  t.alike(await hooks({ select: async () => [], read: reader.read }, 'boot'), [], 'no runtime layer: nothing selected there, none')
+  await t.exception(hooks({ select: async () => { throw new Error('the store closed') }, read: reader.read }, 'boot'), /the store closed/, 'a reader that fails: its error, not "no hooks"')
   await t.exception(hooks(reader, 'reboot'), /not a transition: reboot \(boot, initialise, start, stop, shutdown\)/)
   files['/runtime/hooks/stop/bad.json'] = { command: 'x' }
   await t.exception(hooks(reader, 'stop'), /not a hook: \/runtime\/hooks\/stop\/bad.json/)
+})
+
+test('flags: written with a command, a list in front closed by --, or after its words to the end or --', (t) => {
+  const haicc = { haicc: { default: 'goto', actions: { goto: { command: true } } } }
+  t.alike(flagsOf(['log=debug', 'error-on-empty', 'a=b=c']), { log: 'debug', 'error-on-empty': true, a: 'b=c' }, 'a flag alone, or key=value with no space; space separated')
+  t.alike(interpret(['crud/read', 'swarms/*', '--flags', 'log=debug'], {}, OUTSIDE), { protocol: 'crud', action: 'read', uri: ['main', 'swarms/*'], args: [], flags: { log: 'debug' } }, 'last of the command')
+  t.alike(interpret('crud/create swarms/s1 --flags log=verbose other -- {"n":1}', {}, OUTSIDE), { protocol: 'crud', action: 'create', uri: ['main', 'swarms/s1'], args: ['{"n":1}'], flags: { log: 'verbose', other: true } }, 'or ended by --: the arguments go on after it')
+  t.alike(interpret(['--flags', 'log=debug', '--', 'crud/read', 'swarms'], {}, OUTSIDE), { protocol: 'crud', action: 'read', uri: ['main', 'swarms'], args: [], flags: { log: 'debug' } }, 'in front of the command, closed by --')
+  t.alike(interpret(['service/start', '--flags', 'log=debug'], {}, OUTSIDE), { protocol: 'service', action: 'start', uri: ['main', '.'], args: [], flags: { log: 'debug' } }, 'no URI: the flags are not taken for one')
+  t.alike(interpret(['--flags', 'log=info', '--', 'crud/read', 'x', '--flags', 'log=debug'], {}, OUTSIDE).flags, { log: 'debug' }, 'both: the later one written holds')
+  t.absent('flags' in interpret(['crud/read', 'swarms'], {}, OUTSIDE), 'none written: no flags in the form')
+  // a command that passes its words on: a list among them is the next command's
+  t.alike(interpret(['haicc', 'host', 'crud/read', 'swarms', '--flags', 'log=debug'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['crud/read', 'swarms', '--flags', 'log=debug'] }, 'at the end of a chain: the last command\'s, passed on as written')
+  t.alike(interpret(['--flags', 'log=debug', '--', 'haicc', 'host', 'haicc', 'node-1', 'crud/read', 'swarms'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['haicc', 'node-1', 'crud/read', 'swarms'], flags: { log: 'debug' } }, 'in front of a chain: the first command\'s')
+  t.alike(interpret(['haicc', 'host', '--flags', 'log=info', '--', 'haicc', 'node-1', 'crud/read', 'swarms'], haicc, OUTSIDE).args, ['--flags', 'log=info', '--', 'haicc', 'node-1', 'crud/read', 'swarms'], 'in the middle: in front of the command that follows, its own')
+  t.exception(() => interpret(['--flags', 'log=debug']), /flags and no command/)
+  t.exception(() => interpret(['--flags', 'log=debug', '--']), /flags and no command/)
+  // a flag holds through a chain until changed: what came with the request, under what its own command says
+  t.alike(formOf({ command: ['crud/read', 'swarms'], flags: { log: 'debug' } }, {}, OUTSIDE).flags, { log: 'debug' }, 'the sender\'s flags come with a command sent on')
+  t.alike(formOf({ command: ['crud/read', 'swarms', '--flags', 'log=info'], flags: { log: 'debug', other: true } }, {}, OUTSIDE).flags, { log: 'info', other: true }, 'until changed')
+  t.absent('flags' in formOf('service/start', {}, OUTSIDE))
+  // the enumeration: one that is not there, or a value its flag does not take, is ignored, and said
+  t.alike(Object.keys(FLAGS), ['log'])
+  t.alike(sorted({ log: 'verbose' }), { flags: { log: 'verbose' }, ignored: [] })
+  const s = sorted({ log: 'loud', nope: true, other: 'x' })
+  t.alike(s.flags, {}, 'ignored')
+  t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (log)', 'no flag: other (log)'])
+  t.alike(sorted({ log: true }).ignored.map(i => i.why), ['log=: not one of info, verbose, debug'], 'a flag that takes a value, written alone')
+  t.alike(sorted(undefined), { flags: {}, ignored: [] })
+})
+
+test('the log: three levels of detail, info without asking; an error and a warning always', (t) => {
+  t.alike(LEVELS, ['error', 'warn', 'info', 'verbose', 'debug'])
+  const all = l => { for (const level of LEVELS) l.log(level, level); return l.entries.map(e => e.level) }
+  t.alike(all(logger()), ['error', 'warn', 'info'], 'info: what a request gets unasked')
+  t.alike(all(logger('verbose')), ['error', 'warn', 'info', 'verbose'])
+  t.alike(all(logger('debug')), ['error', 'warn', 'info', 'verbose', 'debug'])
+  t.alike(all(logger('silent')), ['error', 'warn', 'info'], 'no level keeps nothing: not one of the three is info')
+  t.alike(all(logger('error')), ['error', 'warn', 'info'], 'nor is error a threshold')
+  const l = logger('info', () => 'now')
+  l.log('verbose', 'dropped')
+  t.is(l.level(), 'info')
+  t.is(l.level('debug'), 'debug', 'the detail set from here on')
+  l.log('debug', 'kept', { ms: 3 })
+  t.is(l.level('nope'), 'debug', 'not a level: as it was')
+  t.alike(l.entries, [{ level: 'debug', event: 'kept', time: 'now', ms: 3 }], 'an entry: its level, its event, its time, its data')
+  t.exception(() => l.log('trace', 'x'), /not a log level: trace \(error, warn, info, verbose, debug\)/)
 })
 
 test('a record: topic, key, timestamp, headers (empty), value; the onion; a form completed', (t) => {
