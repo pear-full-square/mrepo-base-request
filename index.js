@@ -100,8 +100,10 @@ export function missing (cfg, uri, args = []) {
 //   from outside       (the inbox's) its protocol loaded and its action
 //                      configured, said with what is there when not; what
 //                      the action's config asks for given (missing); its URI
-//                      the prefix main and one segment, that one a URI the
-//                      config names (its patterns are written at main); and
+//                      the prefix main and what is written behind it (one
+//                      segment, or a position in main and the URI written
+//                      there), together a URI the config names (its
+//                      patterns are written at main); and
 //                      now (state: true, as it
 //                      executes): its protocol active (nothing is by
 //                      default: protocol/activate, from a hook), and an
@@ -127,7 +129,7 @@ export function check (value, { service, protocols, active }, { state = true, in
   // and would only be said not offered there)
   const lacks = missing(cfg, uri, value.args)
   if (lacks) return lacks
-  const inMain = uri.length === 2 && uri[0] === MAIN ? uri[1] : null
+  const inMain = uri.length >= 2 && uri[0] === MAIN ? joined(uri.slice(1)) : null
   if (inMain === null || !(cfg.uris || []).some(p => matches(p, inMain))) return `not offered: ${protocol} ${action} at ${inMain ?? joined(uri)}`
   if (!state) return null
   if (!active?.[protocol]) return `not now: ${protocol} ${action} (${protocol} is not active${service ? `; the service is ${service.state}` : ''})`
