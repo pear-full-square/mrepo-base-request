@@ -150,21 +150,23 @@ test('hooks: the commands of a transition, files in its folder, in name order', 
   await t.exception(hooks(reader, 'stop'), /not a hook: \/runtime\/hooks\/stop\/bad.json/)
 })
 
-test('flags: written with a command, a list in front closed by --, or after its words to the end or --', (t) => {
+test('flags: written after a command\'s URI, that step\'s; -- says where what follows starts', (t) => {
   const haicc = { haicc: { default: 'goto', actions: { goto: { command: true } } } }
   t.alike(flagsOf(['log=debug', 'error-on-empty', 'a=b=c']), { log: 'debug', 'error-on-empty': true, a: 'b=c' }, 'a flag alone, or key=value with no space; space separated')
-  t.alike(interpret(['crud/read', 'swarms/*', '--flags', 'log=debug'], {}, OUTSIDE), { protocol: 'crud', action: 'read', uri: ['main', 'swarms/*'], args: [], flags: { log: 'debug' } }, 'last of the command')
+  t.alike(interpret(['crud/read', 'swarms/*', '--flags', 'log=debug'], {}, OUTSIDE), { protocol: 'crud', action: 'read', uri: ['main', 'swarms/*'], args: [], flags: { log: 'debug' } }, 'after the URI, to the end of the command')
   t.alike(interpret('crud/create swarms/s1 --flags log=verbose other -- {"n":1}', {}, OUTSIDE), { protocol: 'crud', action: 'create', uri: ['main', 'swarms/s1'], args: ['{"n":1}'], flags: { log: 'verbose', other: true } }, 'or ended by --: the arguments go on after it')
-  t.alike(interpret(['--flags', 'log=debug', '--', 'crud/read', 'swarms'], {}, OUTSIDE), { protocol: 'crud', action: 'read', uri: ['main', 'swarms'], args: [], flags: { log: 'debug' } }, 'in front of the command, closed by --')
+  t.alike(interpret(['crud/create', 'swarms/s1', '{"n":1}', '--flags', 'log=debug'], {}, OUTSIDE), { protocol: 'crud', action: 'create', uri: ['main', 'swarms/s1'], args: ['{"n":1}'], flags: { log: 'debug' } }, 'after its arguments: taken the same way')
   t.alike(interpret(['service/start', '--flags', 'log=debug'], {}, OUTSIDE), { protocol: 'service', action: 'start', uri: ['main', '.'], args: [], flags: { log: 'debug' } }, 'no URI: the flags are not taken for one')
-  t.alike(interpret(['--flags', 'log=info', '--', 'crud/read', 'x', '--flags', 'log=debug'], {}, OUTSIDE).flags, { log: 'debug' }, 'both: the later one written holds')
   t.absent('flags' in interpret(['crud/read', 'swarms'], {}, OUTSIDE), 'none written: no flags in the form')
-  // a command that passes its words on: a list among them is the next command's
-  t.alike(interpret(['haicc', 'host', 'crud/read', 'swarms', '--flags', 'log=debug'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['crud/read', 'swarms', '--flags', 'log=debug'] }, 'at the end of a chain: the last command\'s, passed on as written')
-  t.alike(interpret(['--flags', 'log=debug', '--', 'haicc', 'host', 'haicc', 'node-1', 'crud/read', 'swarms'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['haicc', 'node-1', 'crud/read', 'swarms'], flags: { log: 'debug' } }, 'in front of a chain: the first command\'s')
-  t.alike(interpret(['haicc', 'host', '--flags', 'log=info', '--', 'haicc', 'node-1', 'crud/read', 'swarms'], haicc, OUTSIDE).args, ['--flags', 'log=info', '--', 'haicc', 'node-1', 'crud/read', 'swarms'], 'in the middle: in front of the command that follows, its own')
-  t.exception(() => interpret(['--flags', 'log=debug']), /flags and no command/)
-  t.exception(() => interpret(['--flags', 'log=debug', '--']), /flags and no command/)
+  // a command that passes its words on: the list after its URI is its own, -- where the next command starts
+  t.alike(interpret(['haicc', 'host', '--flags', 'log=debug', '--', 'crud/read', '.'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['crud/read', '.'], flags: { log: 'debug' } }, 'haicc host --flags log=debug -- crud/read .: the step\'s at host')
+  t.alike(interpret(['haicc', 'host', '--flags', 'log=debug', 'crud/read', '.'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['crud/read', '.'], flags: { log: 'debug' } }, '-- is optional: the list ends at the first word not written as a flag')
+  t.alike(interpret(['haicc', 'host', '--flags', 'log=debug', 'haicc', 'node-1', 'crud/read', '.'], haicc, OUTSIDE).args, ['haicc', 'node-1', 'crud/read', '.'], 'a protocol alone is no flag')
+  t.alike(interpret(['haicc', 'host', '--flags', 'nope', 'log=loud', '--', 'crud/read', '.'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['crud/read', '.'], flags: { nope: true, log: 'loud' } }, 'with --: whatever is written before it, a flag there is none of too')
+  t.alike(interpret(['haicc', 'host', 'crud/read', 'swarms', '--flags', 'log=debug'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['crud/read', 'swarms', '--flags', 'log=debug'] }, 'after the next command\'s URI: that command\'s, passed on as written')
+  t.alike(interpret(['haicc', 'host', '--flags', 'log=info', 'haicc', 'node-1', '--flags', 'log=debug', '--', 'crud/read', '.'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['haicc', 'node-1', '--flags', 'log=debug', '--', 'crud/read', '.'], flags: { log: 'info' } }, 'a list at each step: a -- behind the next list is that list\'s')
+  t.alike(interpret(['haicc', 'host', '--flags', 'log=debug'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: [], flags: { log: 'debug' } }, 'no command after them: the action\'s to refuse')
+  t.exception(() => interpret(['--flags', 'log=debug', '--', 'crud/read', 'swarms']), /not a command: flags follow a command's URI/, 'in front of a command: not a place for them')
   // a flag holds through a chain until changed: what came with the request, under what its own command says
   t.alike(formOf({ command: ['crud/read', 'swarms'], flags: { log: 'debug' } }, {}, OUTSIDE).flags, { log: 'debug' }, 'the sender\'s flags come with a command sent on')
   t.alike(formOf({ command: ['crud/read', 'swarms', '--flags', 'log=info'], flags: { log: 'debug', other: true } }, {}, OUTSIDE).flags, { log: 'info', other: true }, 'until changed')
