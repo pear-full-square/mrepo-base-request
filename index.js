@@ -27,7 +27,7 @@
 import { existsSync, readFileSync } from 'bare-fs'
 import { join } from 'bare-path'
 import { post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX } from './lib/boxes.js'
-import { record, wrap, guid, complete, isComplete, logger, LEVELS, ALWAYS, DETAIL } from './lib/record.js'
+import { record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL } from './lib/record.js'
 import { FLAGS, LAYER, flagsOf, sorted, layerOf } from './lib/flags.js'
 import { layer, AUTHOR } from './lib/layer.js'
 import { viewOf, gitdirOf, setting, isWork, SETTING, MREPOS } from './lib/view.js'
@@ -36,7 +36,7 @@ import { interpret, formOf, layerFor, ROOT, MAIN, OUTSIDE, OWN } from './lib/com
 import { hooks, hooksAt, TRANSITIONS } from './lib/hooks.js'
 
 export { follow } from './lib/follow.js'
-export { MREPOS, post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX, record, wrap, guid, complete, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, flagsOf, sorted, layerOf, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hooks, hooksAt, TRANSITIONS }
+export { MREPOS, post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, flagsOf, sorted, layerOf, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hooks, hooksAt, TRANSITIONS }
 
 export const PENDING = 'request/pending/default'
 export const EXECUTE = 'request/execute'

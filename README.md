@@ -52,6 +52,12 @@ setting.
   its way into pending (`interpret(command, protocols, at)`, `formOf`):
   the protocol alone takes its default action (its config's `default`).
   The command stays in the form, beside what it was interpreted as.
+- **A continuation** (`lib/record.js`: `continuationOf`, `CEILING`,
+  `complete`): a completed form may hold, beside its output, a script
+  for who asked to go on with: `{ at, commands }`, the commands each
+  their parts, at most 100, the position they are written from. The
+  flag `continuation=<script>` asks an action that has scripts for one,
+  by name.
 - **Flags** (`lib/flags.js`): written after a command's URI, after
   `--flags`, space separated, a flag alone or `key=value`: that step's.
   The list runs to the end of the command, or to a `--` with its
