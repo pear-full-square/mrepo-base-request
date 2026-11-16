@@ -63,6 +63,9 @@ setting.
   closes it. A list is closed by `--` or by the end of the command,
   nothing else: every word in between is a flag. The next command's
   words are left as written.
+  `layer=<name>`: the layer the command's own URI is read at, `main`
+  by default (`LAYER`, `layerOf`, `layerFor`); the URI of an action that
+  passes on stays in `main`, a position.
   `FLAGS`: the flags there are, each with the values it takes (`log`:
   `info`, `verbose`, `debug`); `sorted(flags)`: those, and the ones
   ignored, each with why.

@@ -28,15 +28,15 @@ import { existsSync, readFileSync } from 'bare-fs'
 import { join } from 'bare-path'
 import { post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX } from './lib/boxes.js'
 import { record, wrap, guid, complete, isComplete, logger, LEVELS, ALWAYS, DETAIL } from './lib/record.js'
-import { FLAGS, flagsOf, sorted } from './lib/flags.js'
+import { FLAGS, LAYER, flagsOf, sorted, layerOf } from './lib/flags.js'
 import { layer, AUTHOR } from './lib/layer.js'
 import { viewOf, gitdirOf, setting, isWork, SETTING } from './lib/view.js'
 import { relative, from, within, slashed, unslashed, segmented, joined, positionOf } from 'mycelium-uri'
-import { interpret, formOf, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
+import { interpret, formOf, layerFor, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
 import { hooks, hooksAt, TRANSITIONS } from './lib/hooks.js'
 
 export { follow } from './lib/follow.js'
-export { post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX, record, wrap, guid, complete, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, flagsOf, sorted, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hooks, hooksAt, TRANSITIONS }
+export { post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX, record, wrap, guid, complete, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, flagsOf, sorted, layerOf, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hooks, hooksAt, TRANSITIONS }
 
 export const PENDING = 'request/pending/default'
 export const EXECUTE = 'request/execute'
@@ -100,7 +100,8 @@ export function missing (cfg, uri, args = []) {
 //   from outside       (the inbox's) its protocol loaded and its action
 //                      configured, said with what is there when not; what
 //                      the action's config asks for given (missing); its URI
-//                      the prefix main and what is written behind it (one
+//                      the prefix of its layer (main by default; another
+//                      by its flag, layer=<name>) and what is written behind it (one
 //                      segment, or a position in main and the URI written
 //                      there), together a URI the config names (its
 //                      patterns are written at main); and
@@ -129,8 +130,10 @@ export function check (value, { service, protocols, active }, { state = true, in
   // and would only be said not offered there)
   const lacks = missing(cfg, uri, value.args)
   if (lacks) return lacks
-  const inMain = uri.length >= 2 && uri[0] === MAIN ? joined(uri.slice(1)) : null
-  if (inMain === null || !(cfg.uris || []).some(p => matches(p, inMain))) return `not offered: ${protocol} ${action} at ${inMain ?? joined(uri)}`
+  // (the layer it stands at: main by default, another by its flag)
+  const at = layerFor(value, protocols)
+  const inLayer = uri.length >= 2 && uri[0] === at ? joined(uri.slice(1)) : null
+  if (inLayer === null || !(cfg.uris || []).some(p => matches(p, inLayer))) return `not offered: ${protocol} ${action} at ${inLayer ?? joined(uri)}`
   if (!state) return null
   if (!active?.[protocol]) return `not now: ${protocol} ${action} (${protocol} is not active${service ? `; the service is ${service.state}` : ''})`
   return now()
