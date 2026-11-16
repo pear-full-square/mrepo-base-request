@@ -59,9 +59,10 @@ setting.
   was written or came with the request (a command sent on brings the
   sender's: a flag holds down a chain until changed). After the URI of
   an action that passes its words on (its config: `command: true`) the
-  list is that step's and `--` says where the next command starts,
-  optional: without it the list ends at the first word not written as a
-  flag. The next command's words are left as written.
+  list is that step's and the next command starts after the `--` that
+  closes it. A list is closed by `--` or by the end of the command,
+  nothing else: every word in between is a flag. The next command's
+  words are left as written.
   `FLAGS`: the flags there are, each with the values it takes (`log`:
   `info`, `verbose`, `debug`); `sorted(flags)`: those, and the ones
   ignored, each with why.
