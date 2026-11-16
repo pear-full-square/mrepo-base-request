@@ -1,5 +1,5 @@
 import test from 'brittle'
-import { check, matches, missing, hooks, record, wrap, guid, complete, isComplete, logger, LEVELS, FLAGS, flagsOf, sorted, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
+import { check, matches, missing, hooks, record, wrap, guid, complete, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
 
 // The protocols as a runtime loaded them: each action's URIs (patterns
 // written at main, where the outside stands), and the states that allow it
@@ -171,12 +171,26 @@ test('flags: written after a command\'s URI, that step\'s; -- says where what fo
   t.alike(formOf({ command: ['crud/read', 'swarms'], flags: { log: 'debug' } }, {}, OUTSIDE).flags, { log: 'debug' }, 'the sender\'s flags come with a command sent on')
   t.alike(formOf({ command: ['crud/read', 'swarms', '--flags', 'log=info'], flags: { log: 'debug', other: true } }, {}, OUTSIDE).flags, { log: 'info', other: true }, 'until changed')
   t.absent('flags' in formOf('service/start', {}, OUTSIDE))
+  // main is the default layer of a request from outside; a flag changes it
+  t.alike(formOf(['crud/read', 'done/*', '--flags', 'layer=request'], {}, OUTSIDE).uri, ['request', 'done/*'], 'layer=request: the command\'s own URI read at that layer')
+  t.alike(formOf(['crud/read', 'done/*'], {}, OUTSIDE).uri, ['main', 'done/*'], 'without it: main, the default')
+  t.alike(formOf({ command: ['crud/read', 'done/*'], flags: { layer: 'request' } }, {}, OUTSIDE).uri, ['request', 'done/*'], 'come with the request (a command sent on): held')
+  t.alike(formOf({ command: ['crud/read', 'x', '--flags', 'layer=main'], flags: { layer: 'request' } }, {}, OUTSIDE).uri, ['main', 'x'], 'until changed: back to main')
+  t.alike(formOf(['crud/read', '.', '--flags', 'layer=request/done'], {}, ['main', 'swarms/swarm-1']).uri, ['request/done', 'swarms/swarm-1', '.'], 'a layer of several parts; written at a position: the layer in main\'s place')
+  t.alike(formOf(['haicc', 'host', '--flags', 'layer=request', '--', 'crud/read', 'done/*'], haicc, OUTSIDE).uri, ['main', 'host'], 'a command that passes on: its URI is a position, and positions are main\'s; the flag goes on with the command')
+  t.alike(formOf(['crud/read', 'x', '--flags', 'layer=Not_A_Layer'], {}, OUTSIDE).uri, ['main', 'x'], 'a value it does not take: main (ignored, with its warning)')
+  t.alike(formOf(['crud/read', 'runtime/hooks', '--flags', 'layer=request'], {}, OWN).uri, ['runtime/hooks'], 'the mrepo\'s own: the layer first in its URI already')
+  t.alike([layerOf({ layer: 'request' }), layerOf({}), layerOf(undefined), layerOf({ layer: true }), LAYER], ['request', 'main', 'main', 'main', 'main'])
+  t.is(check(formOf(['rest/get', 'done/r1', '--flags', 'layer=request'], protocols, OUTSIDE), at('started')), null, 'checked at its layer: offered there as its config says')
+  t.is(check({ protocol: 'rest', action: 'get', uri: ['request', 'done/r1'] }, at('started')), 'not offered: rest get at request/done/r1', 'another layer without the flag: not where it stands')
+  t.alike(sorted({ layer: 'request/done' }), { flags: { layer: 'request/done' }, ignored: [] })
+  t.is(sorted({ layer: true }).ignored[0].why, 'layer=: not a value it takes')
   // the enumeration: one that is not there, or a value its flag does not take, is ignored, and said
-  t.alike(Object.keys(FLAGS), ['log'])
+  t.alike(Object.keys(FLAGS), ['log', 'layer'])
   t.alike(sorted({ log: 'verbose' }), { flags: { log: 'verbose' }, ignored: [] })
   const s = sorted({ log: 'loud', nope: true, other: 'x' })
   t.alike(s.flags, {}, 'ignored')
-  t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (log)', 'no flag: other (log)'])
+  t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (layer, log)', 'no flag: other (layer, log)'])
   t.alike(sorted({ log: true }).ignored.map(i => i.why), ['log=: not one of info, verbose, debug'], 'a flag that takes a value, written alone')
   t.alike(sorted(undefined), { flags: {}, ignored: [] })
 })
