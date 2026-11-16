@@ -1,5 +1,5 @@
 import test from 'brittle'
-import { check, matches, missing, hooks, record, wrap, guid, complete, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
+import { check, matches, missing, hooks, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
 
 // The protocols as a runtime loaded them: each action's URIs (patterns
 // written at main, where the outside stands), and the states that allow it
@@ -186,11 +186,11 @@ test('flags: written after a command\'s URI, that step\'s; -- says where what fo
   t.alike(sorted({ layer: 'request/done' }), { flags: { layer: 'request/done' }, ignored: [] })
   t.is(sorted({ layer: true }).ignored[0].why, 'layer=: not a value it takes')
   // the enumeration: one that is not there, or a value its flag does not take, is ignored, and said
-  t.alike(Object.keys(FLAGS), ['log', 'layer'])
+  t.alike(Object.keys(FLAGS), ['log', 'layer', 'continuation'])
   t.alike(sorted({ log: 'verbose' }), { flags: { log: 'verbose' }, ignored: [] })
   const s = sorted({ log: 'loud', nope: true, other: 'x' })
   t.alike(s.flags, {}, 'ignored')
-  t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (layer, log)', 'no flag: other (layer, log)'])
+  t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (continuation, layer, log)', 'no flag: other (continuation, layer, log)'])
   t.alike(sorted({ log: true }).ignored.map(i => i.why), ['log=: not one of info, verbose, debug'], 'a flag that takes a value, written alone')
   t.alike(sorted(undefined), { flags: {}, ignored: [] })
 })
@@ -228,6 +228,18 @@ test('a record: topic, key, timestamp, headers (empty), value; the onion; a form
   t.is(done.topic, '/haicc/terminal', 'still addressed to its sender')
   t.alike(core.value.output, undefined, 'the core itself not changed')
   t.alike(complete(core, { ok: false, error: 'x' }).value.error, 'x')
+  // a continuation: beside an output, a script for who asked to go on with
+  const script = continuationOf([['service/initialise'], ['crud/create', 'a', '{"n":1}']], 'host')
+  t.alike(script, { at: 'host', commands: [['service/initialise'], ['crud/create', 'a', '{"n":1}']] }, 'a continuation: the position its commands are written from, and the commands, each its parts')
+  t.alike(complete(core, { ok: true, value: 1, continuation: script }).value, { ...core.value, output: 1, continuation: script }, 'answered beside the output')
+  t.absent('continuation' in complete(core, { ok: false, error: 'x', continuation: script }).value, 'never with an error')
+  t.absent('continuation' in complete(core, { ok: true, value: 1, continuation: null }).value, 'none: not there')
+  t.is(continuationOf([['a/b']]).at, '.', 'written from the mrepo itself, when no position is said')
+  t.is(CEILING, 100)
+  t.exception(() => continuationOf(Array.from({ length: 101 }, () => ['a/b'])), /not a continuation: 101 commands \(at most 100\)/, 'the ceiling')
+  t.exception(() => continuationOf([]), /its commands, a list/)
+  t.exception(() => continuationOf(['service/start']), /a command is its parts/, 'a command is a list of its parts, not a line')
+  t.alike(sorted({ continuation: 'start' }), { flags: { continuation: 'start' }, ignored: [] }, 'the flag that asks for a script, by its name')
 })
 
 test('check: an internal request, the mrepo\'s own: not asked whether active; an action that names its states still by them', (t) => {
