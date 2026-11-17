@@ -142,11 +142,9 @@ test('hooks: a file a transition, its lines simple commands; a script\'s lines, 
   t.exception(() => parse('# only a comment'), /missing argument: script/)
 })
 
-test('here: an action that takes no URI of its own stands where it was sent, every word an argument', (t) => {
-  const protocols = { haicc: { actions: { script: { uris: ['**'], args: ['script'], here: true }, goto: { uris: ['**'], args: ['command'], command: true } } } }
-  const f = interpret(['haicc/script', 'service/initialise\nservice/start'], protocols)
-  t.alike([f.uri, f.args], [['.'], ['service/initialise\nservice/start']], 'the lines its argument, the URI where it stands')
-  t.alike(interpret(['haicc/goto', 'host', 'x/y'], protocols).uri, ['host'], 'an action with a URI: as ever')
+test('a script\'s command: its URI where its lines run, then the lines, one argument', (t) => {
+  const f = interpret(['haicc/script', '.', 'service/initialise\nservice/start'])
+  t.alike([f.uri, f.args], [['.'], ['service/initialise\nservice/start']], 'its URI, then the lines as they were given')
 })
 
 test('flags: written after a command\'s URI, that step\'s; -- says where what follows starts', (t) => {
