@@ -171,7 +171,7 @@ const branches = async ctx => Object.fromEntries(await ctx.backend.listBranches(
 // No mark on the request: internal is having no record in the inbox, which
 // keeps its history (isInternal).
 // -> { name, queued, refused }
-export async function admit (ctx, core, { origin, name = core?.key ?? guid() }) {
+export async function admit (ctx, core, { origin, name = core?.key ?? guid(), at = null }) {
   let why = null
   let form = core?.value
   // a command as typed (its parts): interpreted here, the form filled in
@@ -186,7 +186,7 @@ export async function admit (ctx, core, { origin, name = core?.key ?? guid() }) 
   // (what is wrong with the request itself is said as it is; anything else
   // that fails taking it in is the runtime's)
   try {
-    const filled = formOf(form, ctx.protocols ?? {}, origin === 'internal' ? OWN : OUTSIDE)
+    const filled = formOf(form, ctx.protocols ?? {}, at ?? (origin === 'internal' ? OWN : OUTSIDE))
     if (filled !== form) { form = filled; core = { ...core, value: form } }
   } catch (err) { why = err.message }
   if (!why) {
@@ -209,9 +209,11 @@ export async function isInternal (ctx, name) {
   return !(await layer(ctx, 'inbox').list()).includes(name)
 }
 
-// An internal request: the mrepo's own, submitted straight to the handler.
-// Its topic null: nobody waits for it. -> admit's result
-export const internal = (ctx, form, name = guid()) => admit(ctx, record(null, form, name), { origin: 'internal', name })
+// An internal request: the mrepo's own, submitted straight to the handler,
+// tagged as triggered internally. Its topic null: nobody waits for it.
+// at: where its command stands (OWN, the mrepo's root, by default; OUTSIDE,
+// main, for a line written as from outside: a hook's). -> admit's result
+export const internal = (ctx, form, name = guid(), { at = null } = {}) => admit(ctx, { ...record(null, form, name), headers: { trigger: 'internal' } }, { origin: 'internal', name, at })
 
 export async function untaken (ctx) {
   const b = await branches(ctx)
