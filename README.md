@@ -54,8 +54,8 @@ setting.
   The command stays in the form, beside what it was interpreted as.
 - **A continuation** (`lib/record.js`: `continuationOf`, `CEILING`,
   `complete`): a completed form may hold, beside its output, a script
-  for who asked to go on with: `{ at, commands }`, the commands each
-  their parts, at most 100, the position they are written from. The
+  for who asked to go on with: `{ at, script }`, shell text calling
+  `haicc`, at most 64 KiB, and the position it is run for. The
   flag `continuation=<script>` asks an action that has scripts for one,
   by name.
 - **Flags** (`lib/flags.js`): written after a command's URI, after
