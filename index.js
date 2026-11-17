@@ -33,10 +33,10 @@ import { layer, AUTHOR } from './lib/layer.js'
 import { viewOf, gitdirOf, setting, isWork, SETTING, MREPOS } from './lib/view.js'
 import { relative, from, within, slashed, unslashed, segmented, joined, positionOf } from 'mycelium-uri'
 import { interpret, formOf, layerFor, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
-import { hooks, hooksAt, TRANSITIONS } from './lib/hooks.js'
+import { hooks, scripts, hooksAt, TRANSITIONS } from './lib/hooks.js'
 
 export { follow } from './lib/follow.js'
-export { MREPOS, post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, flagsOf, sorted, layerOf, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hooks, hooksAt, TRANSITIONS }
+export { MREPOS, post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, flagsOf, sorted, layerOf, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hooks, scripts, hooksAt, TRANSITIONS }
 
 export const PENDING = 'request/pending/default'
 export const EXECUTE = 'request/execute'
