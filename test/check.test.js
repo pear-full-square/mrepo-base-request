@@ -142,6 +142,13 @@ test('hooks: a file a transition, its lines simple commands; a script\'s lines, 
   t.exception(() => parse('# only a comment'), /missing argument: script/)
 })
 
+test('here: an action that takes no URI of its own stands where it was sent, every word an argument', (t) => {
+  const protocols = { haicc: { actions: { script: { uris: ['**'], args: ['script'], here: true }, goto: { uris: ['**'], args: ['command'], command: true } } } }
+  const f = interpret(['haicc/script', 'service/initialise\nservice/start'], protocols)
+  t.alike([f.uri, f.args], [['.'], ['service/initialise\nservice/start']], 'the lines its argument, the URI where it stands')
+  t.alike(interpret(['haicc/goto', 'host', 'x/y'], protocols).uri, ['host'], 'an action with a URI: as ever')
+})
+
 test('flags: written after a command\'s URI, that step\'s; -- says where what follows starts', (t) => {
   const haicc = { haicc: { default: 'goto', actions: { goto: { command: true } } } }
   t.alike(flagsOf(['log=debug', 'error-on-empty', 'a=b=c']), { log: 'debug', 'error-on-empty': true, a: 'b=c' }, 'a flag alone, or key=value with no space; space separated')
