@@ -1,5 +1,5 @@
 import test from 'brittle'
-import { check, matches, missing, hooks, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
+import { check, matches, missing, hookOf, parse, words, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
 
 // The protocols as a runtime loaded them: each action's URIs (patterns
 // written at main, where the outside stands), and the states that allow it
@@ -130,24 +130,16 @@ test('check at the inbox: neither the activation nor the state (the queue may ch
   t.is(check(req('other', 'get', 'main'), at('booted'), inbox), 'no protocol: other (help, service)', 'not loaded: refused at once')
 })
 
-test('hooks: the commands of a transition, files in its folder, in name order', async (t) => {
-  const files = {
-    '/runtime/hooks/boot/b-help.json': ['help/extract'],
-    '/runtime/hooks/boot/a-activate.json': ['protocol/activate', '.', 'help'],
-    '/runtime/hooks/boot/notes.txt': 'x',
-    '/runtime/hooks/start/activate-boot.json': ['protocol/activate', '.', 'boot']
-  }
-  const reader = {
-    select: async pattern => Object.keys(files).filter(p => p.startsWith(pattern.slice(0, -1))).map(p => [p, {}]),
-    read: async p => Buffer.from(JSON.stringify(files[p]))
-  }
-  t.alike(await hooks(reader, 'boot'), [{ name: 'a-activate', command: ['protocol/activate', '.', 'help'] }, { name: 'b-help', command: ['help/extract'] }], 'each file a command, its parts; by name')
-  t.alike(await hooks(reader, 'stop'), [], 'none dropped in: none')
-  t.alike(await hooks({ select: async () => [], read: reader.read }, 'boot'), [], 'no runtime layer: nothing selected there, none')
-  await t.exception(hooks({ select: async () => { throw new Error('the store closed') }, read: reader.read }, 'boot'), /the store closed/, 'a reader that fails: its error, not "no hooks"')
-  await t.exception(hooks(reader, 'reboot'), /not a transition: reboot \(boot, initialise, start, stop, shutdown\)/)
-  files['/runtime/hooks/stop/bad.json'] = { command: 'x' }
-  await t.exception(hooks(reader, 'stop'), /not a hook: \/runtime\/hooks\/stop\/bad.json/)
+test('hooks: a file a transition, its lines simple commands; a script\'s lines, split as the shell splits them', async (t) => {
+  const files = { '/runtime/hooks/boot.haicc': Buffer.from('protocol/activate . info\ninfo/extract\n') }
+  const reader = { find: async p => files[p] ?? null }
+  t.is(await hookOf(reader, 'boot'), 'protocol/activate . info\ninfo/extract\n', 'its text')
+  t.is(await hookOf(reader, 'stop'), null, 'none dropped in: none')
+  t.is(await hookOf({ read: async p => { if (!files[p]) throw new Error('none'); return files[p] } }, 'boot'), 'protocol/activate . info\ninfo/extract\n', 'read from the repository the same')
+  await t.exception(hookOf(reader, 'reboot'), /not a transition: reboot \(boot, initialise, start, stop, shutdown\)/)
+  t.alike(parse('# a comment\n\nservice/initialise\n  service/start  ').map(l => [l.n, l.words]), [[3, ['service/initialise']], [4, ['service/start']]], 'blank lines and comments skipped, each line its number')
+  t.alike(words(`crud/create a '{"n":1}'`), ['crud/create', 'a', '{"n":1}'], 'a quoted part one word')
+  t.exception(() => parse('# only a comment'), /missing argument: script/)
 })
 
 test('flags: written after a command\'s URI, that step\'s; -- says where what follows starts', (t) => {
