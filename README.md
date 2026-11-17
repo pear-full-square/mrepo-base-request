@@ -124,6 +124,8 @@ setting.
 - **Hooks** (`hooks(reader, transition)`, `lib/hooks.js`): the commands
   of a status transition, the files in `/runtime/hooks/<transition>/`, in
   name order. The runtime fires `boot`; the service the other four.
+  `scripts(reader, transition)`: its shell hooks, `<name>.sh`, their
+  text, run by the runtime with `sh`.
 - **A layer's records** (`layer(ctx, branch)`): one JSON document a
   record, `<name>.json`, listed in the order they arrived (the commit
   chain). A layer's config, `layer.json` (committed with it when built from
