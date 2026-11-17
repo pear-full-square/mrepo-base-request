@@ -136,4 +136,4 @@ setting.
 
 ## Tests
 
-- `npm test`: the unit tests
+- `brittle-bare test/*.test.js`: the unit tests
