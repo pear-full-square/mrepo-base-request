@@ -138,4 +138,4 @@ setting.
 
 ## Tests
 
-- `brittle-bare test/*.test.js` (Bare installed): the unit tests
+- `brittle-bare test/*.test.js` (Bare installed): the inbox on p2p-git and native git, a command interpreted, the check of a request (activation, state, internal), hooks and a script's lines, flags, the log, a record; each test by its name in [test/](test/).
