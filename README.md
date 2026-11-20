@@ -11,6 +11,7 @@ and the mrepo's storage setting. The runtime runs it, one pass at a time.
 
 ## Links
 
+- [flags](flags/)
 - [lib](lib/)
 - [test](test/)
 
@@ -58,12 +59,14 @@ setting.
   `haicc`, at most 64 KiB, and the position it is run for. The
   flag `continuation=<script>` asks an action that has scripts for one,
   by name.
-- **Flags** (`lib/flags.js`): written after a command's URI, after
+- **Flags** (`lib/flags.js`, the flags there are in `flags/`, a folder
+  each): written after a command's URI, after
   `--flags`, space separated, a flag alone or `key=value`: that step's.
   The list runs to the end of the command, or to a `--` with its
   arguments after it. In the form a map, `flags`, there only when one
   was written or came with the request (a command sent on brings the
-  sender's: a flag holds down a chain until changed). After the URI of
+  sender's flags that hold down a chain, `chained`: such a flag holds
+  until changed). After the URI of
   an action that passes its words on (its config: `command: true`) the
   list is that step's and the next command starts after the `--` that
   closes it. A list is closed by `--` or by the end of the command,
@@ -72,9 +75,17 @@ setting.
   `layer=<name>`: the layer the command's own URI is read at, `main`
   by default (`LAYER`, `layerOf`, `layerFor`); the URI of an action that
   passes on stays in `main`, a position.
-  `FLAGS`: the flags there are, each with the values it takes (`log`:
-  `info`, `verbose`, `debug`); `sorted(flags)`: those, and the ones
-  ignored, each with why.
+  `FLAGS`: the flags there are, each its declaration (`flags/`): its
+  kind, its scope, the values it takes (`log`: `info`, `verbose`,
+  `debug`); `sorted(flags)`: those, and the others, each with why.
+  **Strict** (`problems(form, protocols)`): a flag that is none, a value
+  its flag does not take, a rewrite on a command that is not the last or
+  whose protocol is not here: nothing of the command is run; at the door
+  the request completes, not failed, its output `{ run: false, command,
+  why }` (`notRun`), each reason a warning in its log. **A rewrite**
+  (`help`): the command it is on becomes another request before the
+  door, which checks the rewritten one (`rewritten` in the form says
+  which flag).
 - **A request's URI is relative**: no leading slash, as written where
   its writer stands. `.` is the position itself, and so is none given;
   `./x` is `x`. From outside the writer stands at `main` (`MAIN`), so the
