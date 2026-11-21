@@ -9,6 +9,7 @@ The parts of mrepo-base-request, a file each, imported by its `index.js`.
 | `flags.js` | A request's flags: what is asked of the way a request is handled, beside what it asks for; the flags there are, `flags/`, read, none named. |
 | `follow.js` | The requests followed, as they move: each record arriving in an mrepo's request layers (pending, execute, done), and its children's in view `(<dir>/main/<name>/`, theirs too), printed as it is stored, one compact line a record, its envelope's topic the full path (/boot/request/done, /boot/main/host/request/pending/default). |
 | `hooks.js` | Hooks: the commands an mrepo runs on a status transition, as files its defining package dropped into its runtime layer, one folder a transition. |
+| `lines.js` | A script's lines: each split into its words as the shell splits them (`words`, `parse`), sent through the mrepo's own inbox as its own (`send`: its request's key given by who sends it, to read its record after, or a new one), its response waited for; run one after the other, the first that fails ending them (`run`). |
 | `layer.js` | Records in a layer of the repository (a git branch): one JSON document a record, at the branch's root, `<name>.json.` |
 | `record.js` | A record: the base's minimum, { topic, timestamp, headers, value }; the headers left empty for now (their use to be planned). |
 | `view.js` | A repository's folder: `<work>/mrepos/<name>/`, its git on disk (.git), and a layer's files at the path of its URI (/inbox at `<work>/mrepos/<name>/inbox).` |

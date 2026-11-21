@@ -2,7 +2,7 @@ import test from 'brittle'
 import { readdirSync } from 'bare-fs'
 import { join, dirname } from 'bare-path'
 import { fileURLToPath } from 'bare-url'
-import { check, matches, missing, hookOf, parse, words, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, chained, rewrites, problems, notRun, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
+import { check, matches, missing, hookOf, parse, words, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, chained, rewrites, problems, notRun, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN, send } from '../index.js'
 
 // The protocols as a runtime loaded them: each action's URIs (patterns
 // written at main, where the outside stands), and the states that allow it
@@ -143,6 +143,14 @@ test('hooks: a file a transition, its lines simple commands; a script\'s lines, 
   t.alike(parse('# a comment\n\nservice/initialise\n  service/start  ').map(l => [l.n, l.words]), [[3, ['service/initialise']], [4, ['service/start']]], 'blank lines and comments skipped, each line its number')
   t.alike(words(`crud/create a '{"n":1}'`), ['crud/create', 'a', '{"n":1}'], 'a quoted part one word')
   t.exception(() => parse('# only a comment'), /missing argument: script/)
+})
+
+test('a line sent: its request\'s key the sender\'s to give, a new one else', async (t) => {
+  const seen = []
+  const own = async (parts, key) => { seen.push([parts, key]); return { output: key } }
+  t.is((await send({ own }, ['crud/read', '.'], { key: 'k-1' })).output, 'k-1', 'the key given: the request made with it')
+  await send({ own }, ['crud/read', '.'])
+  t.ok(typeof seen[1][1] === 'string' && seen[1][1] !== 'k-1', 'none given: a new one')
 })
 
 test('a script\'s command: its URI where its lines run, then the lines, one argument', (t) => {
