@@ -49,7 +49,7 @@ setting.
   every request done (none pending or executing in any of them).
 - **Typed records** (`lib/typed.js`, `schemas/request.json`): a record
   as AVRO, the cascade (`mycelium-value-avro`): the record, its value
-  the form completed (`Request`: what it asked, then its output or its
+  the form completed (`request`: what it asked, then its output or its
   error, its log; the form's other fields in `more`), in that its
   arguments and its output, single-object encoded, the action's own
   schema when given and valid, else `json`; an envelope a level more.

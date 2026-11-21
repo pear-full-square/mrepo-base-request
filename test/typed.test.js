@@ -34,7 +34,7 @@ test('typed: an error, null output, a continuation, an envelope around the core'
 
 test('typed: the action\'s own schema for its output, when its output is valid as it; a node\'s log a handler', (t) => {
   const reg = registry()
-  reg.add({ type: 'record', name: 'haiccing.basePackageHelp.AnnotateAnswer', fields: [{ name: 'help', type: 'string' }, { name: 'answer', type: { type: 'array', items: 'string' } }] })
+  reg.add({ type: 'record', name: 'haiccing.basePackageHelp.annotateAnswer', fields: [{ name: 'help', type: 'string' }, { name: 'answer', type: { type: 'array', items: 'string' } }] })
   const h = logHandler(reg, { output: 'haiccing/base-package-help/annotate-answer' })
   const rec = complete(record('/x', { protocol: 'help', action: 'annotate', uri: ['main', '.'], args: ['crud/read'] }, 'k3'), { ok: true, value: { help: 'crud/read .', answer: ['a line'] } })
   const bytes = h.encode(rec)
