@@ -13,6 +13,7 @@ and the mrepo's storage setting. The runtime runs it, one pass at a time.
 
 - [flags](flags/)
 - [lib](lib/)
+- [schemas](schemas/)
 - [test](test/)
 
 ## Design
@@ -46,6 +47,16 @@ setting.
   each record as it arrives in an mrepo's request layers and its children's
   in view, one compact line a record, its topic the full path; `settled()`:
   every request done (none pending or executing in any of them).
+- **Typed records** (`lib/typed.js`, `schemas/request.json`): a record
+  as AVRO, the cascade (`mycelium-value-avro`): the record, its value
+  the form completed (`Request`: what it asked, then its output or its
+  error, its log; the form's other fields in `more`), in that its
+  arguments and its output, single-object encoded, the action's own
+  schema when given and valid, else `json`; an envelope a level more.
+  `encodeRecord(reg, record, { args, output })`, `decodeRecord(reg,
+  bytes)`, back as JSON holds it; `logHandler(reg, opts)`, the value
+  handler for a topic of records, a node's log. The request layers, the
+  inbox and the outbox stay JSON.
 - **A request's form**: `{ protocol, action, uri, args }`, the arguments a
   list, unnamed. A request may also be given as a command, as it is typed:
   its parts in order, `<protocol>/<action> <URI> <argument>...`, an array
