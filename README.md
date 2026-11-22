@@ -67,9 +67,7 @@ setting.
 - **A continuation** (`lib/record.js`: `continuationOf`, `CEILING`,
   `complete`): a completed form may hold, beside its output, a script
   for who asked to go on with: `{ at, script }`, shell text calling
-  `haicc`, at most 64 KiB, and the position it is run for. The
-  flag `continuation=<script>` asks an action that has scripts for one,
-  by name.
+  `haicc`, at most 64 KiB, and the position it is run for.
 - **Flags** (`lib/flags.js`, the flags there are in `flags/`, a folder
   each): written after a command's URI, after
   `--flags`, space separated, a flag alone or `key=value`: that step's.
@@ -146,11 +144,14 @@ setting.
   `runtimeData` reads the active set) and an action that names its states
   in one of them. Nothing is active by default. An internal request is not
   asked whether its protocol is active.
-- **Hooks** (`hooks(reader, transition)`, `lib/hooks.js`): the commands
-  of a status transition, the files in `/runtime/hooks/<transition>/`, in
-  name order. The runtime fires `boot`; the service the other four.
-  `scripts(reader, transition)`: its shell hooks, `<name>.sh`, their
-  text, run by the runtime with `sh`.
+- **Hooks** (`hookOf(reader, transition)`, `hookAt`, `TRANSITIONS`,
+  `lib/hooks.js`): the commands of a status transition, a file a
+  transition, `/runtime/hooks/<transition>.haicc`, its lines simple
+  commands run as the mrepo's own requests. The runtime fires `boot` as
+  it starts, then `commission` (once: the runtime starts at a deploy
+  only, the deploy waiting for it), and `decommission` when a teardown
+  asks, before it is stopped; the service fires `initialise`, `start`,
+  `stop`, `shutdown`.
 - **A layer's records** (`layer(ctx, branch)`): one JSON document a
   record, `<name>.json`, listed in the order they arrived (the commit
   chain). A layer's config, `layer.json` (committed with it when built from
