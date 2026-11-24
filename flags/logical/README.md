@@ -7,8 +7,7 @@ A command's URI read logically: a topic as its records, how it is stored hidden.
 first: no folders of its storage, no file names in the URI or in the
 answer; a record's own fields as attributes (`@offset`), its data by
 path (`value/...`). A record's address there is
-`done/*[@offset=<offset>]`; `done/*[last()]` the latest,
-`done/*[position()>last()-100]` the latest 100. A layer that is a plain tree reads the same
+`done/*[@offset=<offset>]`. A layer that is a plain tree reads the same
 either way. The XPath documentation (`haiccing/base-docs-xpath`) says
 what a logical query is.
 
