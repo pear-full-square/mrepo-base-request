@@ -1,8 +1,8 @@
 # logical
 
-A command's URI read logically: a topic as its records, how it is stored hidden.
+A command's URI read logically: a topic as its records, how it is stored hidden; the reading when nothing is said.
 
-`crud/read 'done/*' --flags layer=request logical` reads the topic
+`crud/read 'done/*' --flags layer=request` reads the topic
 `request/done` as its records, in the order they arrived, the latest
 first: no folders of its storage, no file names in the URI or in the
 answer; a record's own fields as attributes (`@offset`), its data by
@@ -15,4 +15,5 @@ what a logical query is.
 
 An `option`, `chain`; it takes no value. Written with `physical`:
 `logical` holds. With neither written, the mrepo's setting says
-(`/runtime/xpath.json`, `reading`).
+(`/runtime/xpath.json`, `reading`); with no setting, logical: the flag
+is for an mrepo set to physical.
