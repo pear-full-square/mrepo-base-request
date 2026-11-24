@@ -154,7 +154,7 @@ setting.
   `stop`, `shutdown`.
 - **A layer's records** (`layer(ctx, branch)`): one JSON document a
   record, `<name>.json`, listed in the order they arrived (the commit
-  chain). A layer's config, `layer.json` (committed with it when built from
+  chain). A layer's config, `.layer.json` (committed with it when built from
   a structure), is not one of its records, nor is it posted from the inbox
   folder.
 - **The setting** (`setting(work)`): `<work>/mrepo.json`,

@@ -60,7 +60,7 @@ export async function runtimeData ({ repo, protocols = null }) {
   const active = {}
   for (const [p] of await repo.select('/protocols/*')) {
     const name = p.slice(p.lastIndexOf('/') + 1)
-    if (name.endsWith('.json') && name !== 'layer.json') active[name.slice(0, -5)] = await read(p) ?? {}
+    if (name.endsWith('.json') && name !== '.layer.json') active[name.slice(0, -5)] = await read(p) ?? {}
   }
   return { service: await read('/runtime/service.json'), protocols, active }
 }
