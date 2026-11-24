@@ -55,7 +55,7 @@ setting.
 - **Streaming layers** (`lib/layer.js`, `STREAMS`): the `inbox`, the
   `outbox` and `request/done`, what only grows, keep a record in
   folders by its offset's digits (`/<layer>/17953/179531/<offset>.json`;
-  the levels their `.layer.json`'s `stream`); pending and execute are
+  the levels their `.layer.json`'s `structure`); pending and execute are
   flat, the same names. `layer(ctx, name)` reads and writes a record by
   its name alone.
 - **First come, first served** (`arriving`, `POINTER`): the inbox is
