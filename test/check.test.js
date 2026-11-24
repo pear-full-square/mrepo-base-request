@@ -188,7 +188,6 @@ test('flags: written after a command\'s URI, that step\'s; -- says where what fo
   // the enumeration: one that is not there, or a value its flag does not take, is ignored, and said
   t.alike(Object.keys(FLAGS), ['log', 'layer', 'container', 'help', 'feedback', 'logical', 'physical'])
   t.alike([modeOf({ logical: true }), modeOf({}), modeOf(undefined), modeOf({ physical: true }), modeOf({ logical: true, physical: true }), modeOf({ logical: 'yes' })], ['logical', 'logical', 'logical', 'physical', 'logical', 'logical'], 'how a URI is read: logical when nothing is said; physical where its flag is written, as it stands alone; both written: logical')
-  t.alike([modeOf({}, 'physical'), modeOf({}, 'logical'), modeOf({ physical: true }, 'logical'), modeOf({ logical: true }, 'physical'), modeOf({}, 'sideways'), modeOf(undefined, undefined)], ['physical', 'logical', 'physical', 'logical', 'logical', 'logical'], 'no flag: the mrepo\'s setting, its default reading; a flag says for its command; a setting that is none: logical')
   t.alike(sorted({ log: 'verbose' }), { flags: { log: 'verbose' }, ignored: [] })
   const s = sorted({ log: 'loud', nope: true, other: 'x' })
   t.alike(s.flags, {}, 'ignored')

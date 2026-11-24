@@ -14,6 +14,5 @@ what a logical query is.
 ## Declaration
 
 An `option`, `chain`; it takes no value. Written with `physical`:
-`logical` holds. With neither written, the mrepo's setting says
-(`/runtime/xpath.json`, `reading`); with no setting, logical: the flag
-is for an mrepo set to physical.
+`logical` holds. With neither written, logical: the flag says
+what holds already.
