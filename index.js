@@ -253,7 +253,9 @@ export async function arriving (ctx) {
   const pointer = b[PENDING] ? await ctx.repo.read(`/${PENDING}/${POINTER}.json`).then(x => JSON.parse(x.toString()).inbox, () => null) : null
   // read as a topic: its records after the pointer, ascending: an
   // XPathResult, iterated; only the folders from the pointer's on are
-  // touched. (An inbox whose layer says no structure: listed as it is stored.)
+  // touched. Its layer says its structure (its config, from the runtime's
+  // package). One that says none streams by the default (lib/layer.js,
+  // STREAMS) and is listed as it is stored.
   const topic = await result(reading(ctx), ['inbox', pointer === null ? '*' : `*[@offset>${Number(pointer)}]`], { mode: 'logical', ascending: true })
   if (topic.nodeset()?.logical.mode !== 'logical') return layer(ctx, 'inbox').list({ after: pointer })
   return (await topic.all()).map(ref => nameOf(Number(ref.at.match(/@offset=(\d+)\]$/)[1])))

@@ -64,7 +64,8 @@ setting.
   queues the record; none taken ahead of another. The inbox is read
   as a topic, its records after the pointer, ascending
   (`mrepo-base-xpath`'s `result`, iterated): only the folders from the
-  pointer's on are touched. An inbox whose layer says no structure is
+  pointer's on are touched. Its layer says its structure, from the
+  runtime's package; one that says none streams by the default and is
   listed as it is stored.
 - **A queue beside an mrepo** (`queueOf`, `keyed`): a component's side
   boxes, records taken and removed, under a key of the exchange's own:

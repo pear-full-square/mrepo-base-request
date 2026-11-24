@@ -3,7 +3,7 @@ import fs, { mkdtempSync, rmSync, writeFileSync } from 'bare-fs'
 import { join } from 'bare-path'
 import { tmpdir } from 'bare-os'
 import { p2pgitBackend, nativeBackend, openRepo, writer } from 'mycelium-git'
-import { post, inboxFolder, layer, record, setting, gitdirOf, isWork, arriving, drop, nameOf } from '../index.js'
+import { post, inboxFolder, layer, record, setting, gitdirOf, isWork, arriving, drop, nameOf, AUTHOR } from '../index.js'
 
 async function ctxOn (work, backend) {
   await backend.init()
@@ -47,7 +47,10 @@ for (const engine of ['p2p-git', 'native']) {
       t.alike(await post(ctx), [], 'nothing new: nothing')
       t.alike(await box().list(), [nameOf(a), given, nameOf(f), nameOf(g)])
       t.alike(inboxFolder(work).list({ ascending: true }), [f, g], 'the folder kept (housekeeping later)')
-      t.alike(await arriving(ctx), [nameOf(a), given, nameOf(f), nameOf(g)], 'none taken in yet: first come, first served')
+      t.alike(await arriving(ctx), [nameOf(a), given, nameOf(f), nameOf(g)], 'an inbox whose layer says no structure: listed as it is stored, by the default')
+      // its layer's config, as the runtime's package gives every mrepo's inbox
+      { const c = await ctx.writer.change('inbox'); await c.put('/.layer.json', Buffer.from(JSON.stringify({ mode: 'non-atomic', description: 'Records posted to the mrepo.', structure: { type: 'offset-files', levels: [5, 6], batch: 2 } }))); await c.commit('config', { author: AUTHOR }) }
+      t.alike(await arriving(ctx), [nameOf(a), given, nameOf(f), nameOf(g)], 'none taken in yet: first come, first served; read as a topic, ascending, across its slices')
       t.alike(await box().list({ after: given }), [nameOf(f), nameOf(g)], 'past a pointer')
       t.is(await box().has(nameOf(g)), true)
       t.is(await box().has('1795312345679'), false)
