@@ -2,7 +2,7 @@ import test from 'brittle'
 import { readdirSync } from 'bare-fs'
 import { join, dirname } from 'bare-path'
 import { fileURLToPath } from 'bare-url'
-import { check, matches, missing, hookOf, parse, words, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, chained, rewrites, problems, notRun, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
+import { check, matches, missing, hookOf, parse, words, record, wrap, stamp, tick, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, chained, rewrites, problems, notRun, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
 
 // The protocols as a runtime loaded them: each action's URIs (patterns
 // written at main, where the outside stands), and the states that allow it
@@ -259,12 +259,17 @@ test('the log: three levels of detail, info without asking; an error and a warni
   t.exception(() => l.log('trace', 'x'), /not a log level: trace \(error, warn, info, verbose, debug\)/)
 })
 
-test('a record: topic, key, timestamp, headers (empty), value; the onion; a form completed', (t) => {
-  const core = record('/haicc/terminal', { api: 'haicc', protocol: 'rest', action: 'get', uri: ['main', '.'] }, guid())
+test('a record: topic, offset, timestamp, headers (empty), value; the onion; a form completed', (t) => {
+  const core = record('/haicc/terminal', { api: 'haicc', protocol: 'rest', action: 'get', uri: ['main', '.'] }, 1795312345678)
   const envelope = wrap('/host/inbox', core)
-  t.ok(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(core.key), 'the key: a GUID')
-  t.is(envelope.key, core.key, 'the envelope carries its core\'s key')
-  t.alike(Object.keys(envelope), ['topic', 'key', 'timestamp', 'headers', 'value'])
+  t.is(core.offset, 1795312345678, 'the offset: a number, the milliseconds when it arrived')
+  t.is(envelope.offset, core.offset, 'the envelope carries its core\'s offset')
+  t.is(wrap('/other/request/pending/default', core, 1795400000000).offset, 1795400000000, 'a record from elsewhere: its own offset here, on its envelope')
+  t.is(record('/x', 1).offset, null, 'not arrived yet: none')
+  t.alike(Object.keys(envelope), ['topic', 'offset', 'timestamp', 'headers', 'value'])
+  const bare = wrap('/host/inbox', record('/reply', 1))
+  t.alike([stamp(bare, 7).offset, stamp(bare, 7).value.offset], [7, 7], 'stamped as it arrives: the envelope and its core')
+  t.ok(tick() < tick(), 'a clock in one process: never two the same')
   t.alike(envelope.headers, {})
   t.is(envelope.value, core, 'the core inside')
   t.absent(isComplete(core))
