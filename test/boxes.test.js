@@ -47,10 +47,12 @@ for (const engine of ['p2p-git', 'native']) {
       t.alike(await post(ctx), [], 'nothing new: nothing')
       t.alike(await box().list(), [nameOf(a), given, nameOf(f), nameOf(g)])
       t.alike(inboxFolder(work).list({ ascending: true }), [f, g], 'the folder kept (housekeeping later)')
-      t.alike(await arriving(ctx), [nameOf(a), given, nameOf(f), nameOf(g)], 'an inbox whose layer says no structure: listed as it is stored, by the default')
-      // its layer's config, as the runtime's package gives every mrepo's inbox
-      { const c = await ctx.writer.change('inbox'); await c.put('/.layer.json', Buffer.from(JSON.stringify({ mode: 'non-atomic', description: 'Records posted to the mrepo.', structure: { type: 'offset-files', levels: [5, 6], batch: 2 } }))); await c.commit('config', { author: AUTHOR }) }
-      t.alike(await arriving(ctx), [nameOf(a), given, nameOf(f), nameOf(g)], 'none taken in yet: first come, first served; read as a topic, ascending, across its slices')
+      // made by the runtime: declared as it is made, its structure in its config
+      t.alike(JSON.parse((await ctx.repo.read('/inbox/.layer.json')).toString()).structure, { type: 'offset-files', levels: [5, 6], batch: 50 }, 'the inbox, made when first needed: its structure declared in its config')
+      t.alike(await arriving(ctx), [nameOf(a), given, nameOf(f), nameOf(g)], 'none taken in yet: first come, first served; read as a topic, ascending')
+      // explicit, always: a layer that declares no structure is a folder, whatever its name
+      await ctx.writer.createLayer('outbox', 'Create outbox', { author: AUTHOR })
+      t.is(await layer(ctx, 'outbox').streaming(), false, 'a box made without a config: a folder, not a stream; no default by its name')
       t.alike(await box().list({ after: given }), [nameOf(f), nameOf(g)], 'past a pointer')
       t.is(await box().has(nameOf(g)), true)
       t.is(await box().has('1795312345679'), false)

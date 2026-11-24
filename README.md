@@ -56,7 +56,10 @@ setting.
   `outbox` and `request/done`, what only grows, keep a record in
   folders by its offset's digits (`/<layer>/17953/179531/<offset>.json`;
   the levels their `.layer.json`'s `structure`); pending and execute are
-  flat, the same names. `layer(ctx, name)` reads and writes a record by
+  flat, the same names. Declared, always: a layer streams because its
+  config says its structure, never by its name; one that declares none
+  is a folder. A box the runtime makes itself is made with that config
+  (`ensure`, `declarationOf`). `layer(ctx, name)` reads and writes a record by
   its name alone.
 - **First come, first served** (`arriving`, `POINTER`): the inbox is
   taken in past a pointer, the last record taken
@@ -64,9 +67,8 @@ setting.
   queues the record; none taken ahead of another. The inbox is read
   as a topic, its records after the pointer, ascending
   (`mrepo-base-xpath`'s `query`, its result iterated): only the folders from the
-  pointer's on are touched. Its layer says its structure, from the
-  runtime's package; one that says none streams by the default and is
-  listed as it is stored.
+  pointer's on are touched. An inbox that declares no structure is a
+  folder, no inbox: said.
 - **A queue beside an mrepo** (`queueOf`, `keyed`): a component's side
   boxes, records taken and removed, under a key of the exchange's own:
   no stream.

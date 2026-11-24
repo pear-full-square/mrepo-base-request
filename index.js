@@ -28,7 +28,7 @@ import { join } from 'bare-path'
 import { post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, INBOX, OUTBOX } from './lib/boxes.js'
 import { record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL } from './lib/record.js'
 import { FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites } from './lib/flags.js'
-import { layer, AUTHOR, STREAMS } from './lib/layer.js'
+import { layer, AUTHOR, STREAMS, declarationOf } from './lib/layer.js'
 import { nameOf } from 'mycelium-container-document'
 import { query } from 'mrepo-base-xpath'
 import { viewOf, gitdirOf, setting, isWork, SETTING, MREPOS, SCRIPTS } from './lib/view.js'
@@ -39,7 +39,7 @@ import { words, parse, send, run as runLines } from './lib/lines.js'
 
 export { follow } from './lib/follow.js'
 export { encodeRecord, decodeRecord, logHandler, REQUEST } from './lib/typed.js'
-export { MREPOS, SCRIPTS, post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, nameOf, STREAMS, INBOX, OUTBOX, record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
+export { MREPOS, SCRIPTS, post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, nameOf, STREAMS, declarationOf, INBOX, OUTBOX, record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
 
 export const PENDING = 'request/pending/default'
 export const EXECUTE = 'request/execute'
@@ -253,11 +253,10 @@ export async function arriving (ctx) {
   const pointer = b[PENDING] ? await ctx.repo.read(`/${PENDING}/${POINTER}.json`).then(x => JSON.parse(x.toString()).inbox, () => null) : null
   // read as a topic: its records after the pointer, ascending: an
   // XPathResult, iterated; only the folders from the pointer's on are
-  // touched. Its layer says its structure (its config, from the runtime's
-  // package). One that says none streams by the default (lib/layer.js,
-  // STREAMS) and is listed as it is stored.
+  // touched. Its layer declares its structure (its config); one that
+  // declares none is a folder, no inbox: said.
   const topic = await query(reading(ctx), ['inbox', pointer === null ? '*' : `*[@offset>${Number(pointer)}]`], { mode: 'logical', ascending: true })
-  if (topic.metadata()?.logical.mode !== 'logical') return layer(ctx, 'inbox').list({ after: pointer })
+  if (topic.metadata()?.logical.mode !== 'logical') throw new Error('the inbox is a folder, no topic: its layer declares no structure (inbox/.layer.json, structure: offset-files)')
   return (await topic.all()).map(ref => nameOf(Number(ref.at.match(/@offset=(\d+)\]$/)[1])))
 }
 // The mrepo as a query reads it, outside a request's execution: the
