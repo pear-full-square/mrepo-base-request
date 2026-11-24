@@ -30,6 +30,7 @@ import { record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isC
 import { FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites } from './lib/flags.js'
 import { layer, AUTHOR, STREAMS } from './lib/layer.js'
 import { nameOf } from 'mycelium-container-document'
+import { result } from 'mrepo-base-xpath'
 import { viewOf, gitdirOf, setting, isWork, SETTING, MREPOS, SCRIPTS } from './lib/view.js'
 import { relative, from, within, slashed, unslashed, segmented, joined, positionOf } from 'mycelium-uri'
 import { interpret, formOf, layerFor, problems, passesOn, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
@@ -250,8 +251,23 @@ export async function arriving (ctx) {
   if (!b.inbox) return []
   // catch: no pointer yet: nothing taken in, all of them
   const pointer = b[PENDING] ? await ctx.repo.read(`/${PENDING}/${POINTER}.json`).then(x => JSON.parse(x.toString()).inbox, () => null) : null
-  return layer(ctx, 'inbox').list({ after: pointer })
+  // read as a topic: its records after the pointer, ascending: an
+  // XPathResult, iterated; only the folders from the pointer's on are
+  // touched. (An inbox whose layer says no structure: listed as it is stored.)
+  const topic = await result(reading(ctx), ['inbox', pointer === null ? '*' : `*[@offset>${Number(pointer)}]`], { mode: 'logical', ascending: true })
+  if (topic.nodeset()?.logical.mode !== 'logical') return layer(ctx, 'inbox').list({ after: pointer })
+  return (await topic.all()).map(ref => nameOf(Number(ref.at.match(/@offset=(\d+)\]$/)[1])))
 }
+// The mrepo as a query reads it, outside a request's execution: the
+// runtime's own reads of its topics (nothing measured: no request's log).
+const reading = ctx => ({
+  id: null,
+  node: uri => ctx.repo.node(slashed(uri)),
+  children: node => ctx.repo.children(node),
+  bytes: node => ctx.repo.bytes(node),
+  find: path => ctx.repo.find(path),
+  step: (event, data, fn) => fn()
+})
 
 // A request's own branch of request/execute: execute/<key>/request/execute.
 // The request is processed there, never in request/execute itself, and the
