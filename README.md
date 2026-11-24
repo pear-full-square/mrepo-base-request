@@ -63,7 +63,7 @@ setting.
   (`request/pending/default/.pointer.json`), moved in the commit that
   queues the record; none taken ahead of another. The inbox is read
   as a topic, its records after the pointer, ascending
-  (`mrepo-base-xpath`'s `result`, iterated): only the folders from the
+  (`mrepo-base-xpath`'s `query`, its result iterated): only the folders from the
   pointer's on are touched. Its layer says its structure, from the
   runtime's package; one that says none streams by the default and is
   listed as it is stored.

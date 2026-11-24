@@ -30,7 +30,7 @@ import { record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isC
 import { FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites } from './lib/flags.js'
 import { layer, AUTHOR, STREAMS } from './lib/layer.js'
 import { nameOf } from 'mycelium-container-document'
-import { result } from 'mrepo-base-xpath'
+import { query } from 'mrepo-base-xpath'
 import { viewOf, gitdirOf, setting, isWork, SETTING, MREPOS, SCRIPTS } from './lib/view.js'
 import { relative, from, within, slashed, unslashed, segmented, joined, positionOf } from 'mycelium-uri'
 import { interpret, formOf, layerFor, problems, passesOn, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
@@ -256,8 +256,8 @@ export async function arriving (ctx) {
   // touched. Its layer says its structure (its config, from the runtime's
   // package). One that says none streams by the default (lib/layer.js,
   // STREAMS) and is listed as it is stored.
-  const topic = await result(reading(ctx), ['inbox', pointer === null ? '*' : `*[@offset>${Number(pointer)}]`], { mode: 'logical', ascending: true })
-  if (topic.nodeset()?.logical.mode !== 'logical') return layer(ctx, 'inbox').list({ after: pointer })
+  const topic = await query(reading(ctx), ['inbox', pointer === null ? '*' : `*[@offset>${Number(pointer)}]`], { mode: 'logical', ascending: true })
+  if (topic.metadata()?.logical.mode !== 'logical') return layer(ctx, 'inbox').list({ after: pointer })
   return (await topic.all()).map(ref => nameOf(Number(ref.at.match(/@offset=(\d+)\]$/)[1])))
 }
 // The mrepo as a query reads it, outside a request's execution: the
