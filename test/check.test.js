@@ -2,7 +2,7 @@ import test from 'brittle'
 import { readdirSync } from 'bare-fs'
 import { join, dirname } from 'bare-path'
 import { fileURLToPath } from 'bare-url'
-import { check, matches, missing, hookOf, parse, words, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, chained, rewrites, problems, notRun, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN, send } from '../index.js'
+import { check, matches, missing, hookOf, parse, words, record, wrap, stamp, tick, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, modeOf, flagsOf, sorted, chained, rewrites, problems, notRun, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN, send } from '../index.js'
 
 // The protocols as a runtime loaded them: each action's URIs (patterns
 // written at main, where the outside stands), and the states that allow it
@@ -139,18 +139,18 @@ test('hooks: a file a transition, its lines simple commands; a script\'s lines, 
   t.is(await hookOf(reader, 'boot'), 'protocol/activate . info\ninfo/extract\n', 'its text')
   t.is(await hookOf(reader, 'stop'), null, 'none dropped in: none')
   t.is(await hookOf({ read: async p => { if (!files[p]) throw new Error('none'); return files[p] } }, 'boot'), 'protocol/activate . info\ninfo/extract\n', 'read from the repository the same')
-  await t.exception(hookOf(reader, 'reboot'), /not a transition: reboot \(boot, initialise, start, stop, shutdown\)/)
+  await t.exception(hookOf(reader, 'reboot'), /not a transition: reboot \(boot, commission, initialise, start, stop, shutdown, decommission\)/)
   t.alike(parse('# a comment\n\nservice/initialise\n  service/start  ').map(l => [l.n, l.words]), [[3, ['service/initialise']], [4, ['service/start']]], 'blank lines and comments skipped, each line its number')
   t.alike(words(`crud/create a '{"n":1}'`), ['crud/create', 'a', '{"n":1}'], 'a quoted part one word')
   t.exception(() => parse('# only a comment'), /missing argument: script/)
 })
 
-test('a line sent: its request\'s key the sender\'s to give, a new one else', async (t) => {
-  const seen = []
-  const own = async (parts, key) => { seen.push([parts, key]); return { output: key } }
-  t.is((await send({ own }, ['crud/read', '.'], { key: 'k-1' })).output, 'k-1', 'the key given: the request made with it')
-  await send({ own }, ['crud/read', '.'])
-  t.ok(typeof seen[1][1] === 'string' && seen[1][1] !== 'k-1', 'none given: a new one')
+test('a line sent: its request\'s offset given back beside its completed form', async (t) => {
+  const submitted = []
+  const runtime = { uri: 'local/x', submit: async core => { submitted.push(core); return 1764000000123 }, answer: async offset => ({ output: { asked: offset } }) }
+  const form = await send(runtime, ['crud/read', '.'])
+  t.alike(form, { output: { asked: 1764000000123 }, offset: 1764000000123 }, 'its answer, and the offset its request was given')
+  t.alike(submitted[0].value, ['crud/read', '.'], 'the command as its parts')
 })
 
 test('a script\'s command: its URI where its lines run, then the lines, one argument', (t) => {
@@ -194,11 +194,12 @@ test('flags: written after a command\'s URI, that step\'s; -- says where what fo
   t.alike(sorted({ layer: 'request/done' }), { flags: { layer: 'request/done' }, ignored: [] })
   t.is(sorted({ layer: true }).ignored[0].why, 'layer=: not a value it takes')
   // the enumeration: one that is not there, or a value its flag does not take, is ignored, and said
-  t.alike(Object.keys(FLAGS), ['log', 'layer', 'continuation', 'container', 'help', 'feedback'])
+  t.alike(Object.keys(FLAGS), ['log', 'layer', 'container', 'help', 'feedback', 'physical'])
+  t.alike([modeOf({}), modeOf(undefined), modeOf({ physical: true }), modeOf({ physical: 'yes' })], ['logical', 'logical', 'physical', 'logical'], 'how a URI is read: logical when nothing is said; physical where its flag is written, as it stands alone')
   t.alike(sorted({ log: 'verbose' }), { flags: { log: 'verbose' }, ignored: [] })
   const s = sorted({ log: 'loud', nope: true, other: 'x' })
   t.alike(s.flags, {}, 'ignored')
-  t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (container, continuation, feedback, help, layer, log)', 'no flag: other (container, continuation, feedback, help, layer, log)'])
+  t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (container, feedback, help, layer, log, physical)', 'no flag: other (container, feedback, help, layer, log, physical)'])
   t.alike(sorted({ log: true }).ignored.map(i => i.why), ['log=: not one of info, verbose, debug'], 'a flag that takes a value, written alone')
   t.alike(sorted(undefined), { flags: {}, ignored: [] })
 })
@@ -221,7 +222,7 @@ test('the flag unit: a folder a flag, each listed, its declaration; what holds d
   t.is(check(help, { service: null, protocols: both, active: { help: {} } }), null, 'the door checks the rewritten command')
   t.absent('flags' in formOf({ command: ['crud/read', 'x'], flags: { help: true } }, both, OUTSIDE), 'the last command\'s only: not carried down a chain')
   // strict: nothing of the command run, said why
-  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'nope', 'log=loud'], both, OUTSIDE), both), ['no flag: nope (container, continuation, feedback, help, layer, log)', 'log=loud: not one of info, verbose, debug'], 'a flag that is none; a value its flag does not take: each said')
+  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'nope', 'log=loud'], both, OUTSIDE), both), ['no flag: nope (container, feedback, help, layer, log, physical)', 'log=loud: not one of info, verbose, debug'], 'a flag that is none; a value its flag does not take: each said')
   t.alike(problems(formOf(['crud/read', 'x', '--flags', 'help=yes'], both, OUTSIDE), both), ['help takes no value'], 'a value its flag does not take')
   t.alike(problems(formOf(['crud/read', 'x', '--flags', 'help'], { crud: both.crud }, OUTSIDE), { crud: both.crud }), ['help: no protocol help here'], 'a rewrite whose protocol is not here: not rewritten, said')
   const haicc = { ...both, haicc: { default: 'goto', actions: { goto: { command: true, uris: ['**'] } } } }
@@ -267,12 +268,17 @@ test('the log: three levels of detail, info without asking; an error and a warni
   t.exception(() => l.log('trace', 'x'), /not a log level: trace \(error, warn, info, verbose, debug\)/)
 })
 
-test('a record: topic, key, timestamp, headers (empty), value; the onion; a form completed', (t) => {
-  const core = record('/haicc/terminal', { api: 'haicc', protocol: 'rest', action: 'get', uri: ['main', '.'] }, guid())
+test('a record: topic, offset, timestamp, headers (empty), value; the onion; a form completed', (t) => {
+  const core = record('/haicc/terminal', { api: 'haicc', protocol: 'rest', action: 'get', uri: ['main', '.'] }, 1795312345678)
   const envelope = wrap('/host/inbox', core)
-  t.ok(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(core.key), 'the key: a GUID')
-  t.is(envelope.key, core.key, 'the envelope carries its core\'s key')
-  t.alike(Object.keys(envelope), ['topic', 'key', 'timestamp', 'headers', 'value'])
+  t.is(core.offset, 1795312345678, 'the offset: a number, the milliseconds when it arrived')
+  t.is(envelope.offset, core.offset, 'the envelope carries its core\'s offset')
+  t.is(wrap('/other/request/pending/default', core, 1795400000000).offset, 1795400000000, 'a record from elsewhere: its own offset here, on its envelope')
+  t.is(record('/x', 1).offset, null, 'not arrived yet: none')
+  t.alike(Object.keys(envelope), ['topic', 'offset', 'timestamp', 'headers', 'value'])
+  const bare = wrap('/host/inbox', record('/reply', 1))
+  t.alike([stamp(bare, 7).offset, stamp(bare, 7).value.offset], [7, 7], 'stamped as it arrives: the envelope and its core')
+  t.ok(tick() < tick(), 'a clock in one process: never two the same')
   t.alike(envelope.headers, {})
   t.is(envelope.value, core, 'the core inside')
   t.absent(isComplete(core))
@@ -292,7 +298,7 @@ test('a record: topic, key, timestamp, headers (empty), value; the onion; a form
   t.exception(() => continuationOf('x'.repeat(CEILING + 1)), /not a continuation: 65537 bytes \(at most 65536\)/, 'at most CEILING bytes')
   t.exception(() => continuationOf('  \n'), /its script, shell text/, 'an empty script: none')
   t.exception(() => continuationOf([['service/start']]), /its script, shell text/, 'a list of commands: the form of before, refused')
-  t.alike(sorted({ continuation: 'start' }), { flags: { continuation: 'start' }, ignored: [] }, 'the flag that asks for a script, by its name')
+  t.alike(sorted({ continuation: 'start' }).ignored.map(i => i.why), ['no flag: continuation (container, feedback, help, layer, log, physical)'], 'no flag asks for a script: a deploy goes on with its commission hook')
 })
 
 test('check: an internal request, the mrepo\'s own: not asked whether active; an action that names its states still by them', (t) => {

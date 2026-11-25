@@ -4,7 +4,7 @@ The tests of mrepo-base-request, a section per file, each test by its name.
 
 ## `boxes.test.js`
 
-- post on p2p-git and on native: a record committed into the inbox layer; the folder's new files committed; nothing removed
+- post on p2p-git and on native: a record committed into the inbox layer under its offset; the folder's new records committed; nothing removed
 - the setting: the p2p host by default; a repository on native git by mrepo.json
 
 ## `check.test.js`
@@ -18,10 +18,18 @@ The tests of mrepo-base-request, a section per file, each test by its name.
 - check: the service's own actions, each in its state
 - check at the inbox: neither the activation nor the state (the queue may change them first)
 - hooks: a file a transition, its lines simple commands; a script's lines, split as the shell splits them
-- a line sent: its request's key the sender's to give, a new one else
+- a line sent: its request's offset given back beside its completed form
 - a script's command: its URI where its lines run, then the lines, one argument
 - flags: written after a command's URI, that step's; -- says where what follows starts
 - the flag unit: a folder a flag, each listed, its declaration; what holds down a chain; strict: what keeps a command from being run
 - the log: three levels of detail, info without asking; an error and a warning always
-- a record: topic, key, timestamp, headers (empty), value; the onion; a form completed
+- a record: topic, offset, timestamp, headers (empty), value; the onion; a form completed
 - check: an internal request, the mrepo's own: not asked whether active; an action that names its states still by them
+
+## `typed.test.js`
+
+A request record as AVRO, the cascade: written, read back as JSON holds it; the action's own for its output when given; a node's log a topic of them.
+
+- typed: a completed request record as AVRO, read back as JSON holds it; smaller
+- typed: an error, null output, a continuation, an envelope around the core
+- typed: the action's own schema for its output, when its output is valid as it; a node's log a handler
