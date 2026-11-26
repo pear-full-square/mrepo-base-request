@@ -3,10 +3,10 @@
 // Its check against the types themselves is the runtime package's
 // (its test/types): a type is a package's, not a module's.
 import test from 'brittle'
-import { asked, filled, understood, noted, measured, returned, isReturned, STATUS } from '../index.js'
+import { asked, filled, understood, noted, measured, returned, isReturned, STATUS, NONE } from '../index.js'
 
 const PROTOCOLS = { crud: { default: 'read', actions: { read: { uris: ['**'] } } }, haicc: { default: 'goto', actions: { goto: { uris: ['**'], command: true } } } }
-const EMPTY = { log: [], metrics: null, changed: [], waiting: null, path: [], continuation: null }
+const EMPTY = { log: [], metrics: null, changed: [], waiting: null, sent: null, continuation: null }
 
 test('asked: a request as it arrives, the line as typed, who asked and where its answer goes its own', (t) => {
   const r = asked('crud/read swarms', { from: 'terminal', to: 'local/host', reply: '/haicc/terminal' })
@@ -19,10 +19,10 @@ test('asked: a request as it arrives, the line as typed, who asked and where its
 
 test('understood: its form from its line, read by the one parser, where the writer stands; once', (t) => {
   const r = understood(asked('crud/read swarms'), PROTOCOLS, ['main'])
-  t.alike(r.form, { protocol: 'crud', action: 'read', uri: ['main', 'swarms'], args: [], flags: {} }, 'its protocol and action, its URI\'s segments, no arguments, no flags')
+  t.alike(r.form, { protocol: 'crud', action: 'read', uri: ['main', 'swarms'], args: [], flags: NONE }, 'its protocol and action, its URI\'s segments, no arguments, no flags')
   t.is(r.command, 'crud/read swarms', 'the line kept as typed')
-  t.alike(understood(asked('crud swarms/swarm-1'), PROTOCOLS).form, { protocol: 'crud', action: 'read', uri: ['swarms/swarm-1'], args: [], flags: {} }, 'the protocol alone: its default action')
-  t.alike(understood(asked('crud/create swarms/x \'{"kind":"swarm"}\' two --flags log=debug physical'), PROTOCOLS, ['main']).form, { protocol: 'crud', action: 'create', uri: ['main', 'swarms/x'], args: ['{"kind":"swarm"}', 'two'], flags: { log: 'debug', physical: 'true' } }, 'a quoted word one argument, its quotes off; flags a text each, one that stands alone true')
+  t.alike(understood(asked('crud swarms/swarm-1'), PROTOCOLS).form, { protocol: 'crud', action: 'read', uri: ['main', 'swarms/swarm-1'], args: [], flags: NONE }, 'the protocol alone: its default action; where nothing says another, at main')
+  t.alike(understood(asked('crud/create swarms/x \'{"kind":"swarm"}\' two --flags log=debug physical'), PROTOCOLS, ['main']).form, { protocol: 'crud', action: 'create', uri: ['main', 'swarms/x'], args: ['{"kind":"swarm"}', 'two'], flags: { ...NONE, log: 'debug', physical: true } }, 'a quoted word one argument, its quotes off; flags a text each, one that stands alone true')
   t.is(understood(r, {}, ['other']), r, 'understood already: as it is')
   t.exception(() => understood(asked('crud/read "swarms'), PROTOCOLS), /quote not closed/, 'a quote not closed: said')
   t.exception(() => understood(asked('nothing here'), PROTOCOLS), /no action/, 'no action to be told: said')
@@ -30,7 +30,7 @@ test('understood: its form from its line, read by the one parser, where the writ
 
 test('filled: a request whose form came filled in, no line', (t) => {
   const r = filled({ protocol: 'crud', action: 'read', uri: ['main', '.'], args: [1, 'two'], flags: { help: true } }, { from: 'local/host' })
-  t.alike(r, { command: null, from: 'local/host', to: null, reply: null, origin: null, form: { protocol: 'crud', action: 'read', uri: ['main', '.'], args: ['1', 'two'], flags: { help: 'true' } }, processing: EMPTY, returned: null }, 'its arguments texts, its flags a text each')
+  t.alike(r, { command: null, from: 'local/host', to: null, reply: null, origin: null, form: { protocol: 'crud', action: 'read', uri: ['main', '.'], args: ['1', 'two'], flags: { ...NONE, help: true } }, processing: EMPTY, returned: null }, 'its arguments texts, its flags the record, a field a flag')
   t.exception(() => filled({ protocol: 'crud' }), /not a form/, 'not a form: said')
 })
 
