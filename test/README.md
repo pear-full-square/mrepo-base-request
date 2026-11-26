@@ -33,3 +33,11 @@ A request record as AVRO, the cascade: written, read back as JSON holds it; the 
 - typed: a completed request record as AVRO, read back as JSON holds it; smaller
 - typed: an error, null output, a continuation, an envelope around the core
 - typed: the action's own schema for its output, when its output is valid as it; a node's log a handler
+
+## `request.test.js`
+
+- asked: a request as it arrives, the line as typed, who asked and where its answer goes its own
+- understood: its form from its line, read by the one parser, where the writer stands; once
+- filled: a request whose form came filled in, no line
+- noted, measured: an entry a line, its metrics; a new request each, the one given unchanged
+- returned: completed, done or failed, with what is said; its attachments by their base
