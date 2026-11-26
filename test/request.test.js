@@ -21,7 +21,7 @@ test('understood: its form from its line, read by the one parser, where the writ
   const r = understood(asked('crud/read swarms'), PROTOCOLS, ['main'])
   t.alike(r.form, { protocol: 'crud', action: 'read', uri: ['main', 'swarms'], args: [], flags: NONE }, 'its protocol and action, its URI\'s segments, no arguments, no flags')
   t.is(r.command, 'crud/read swarms', 'the line kept as typed')
-  t.alike(understood(asked('crud swarms/swarm-1'), PROTOCOLS).form, { protocol: 'crud', action: 'read', uri: ['swarms/swarm-1'], args: [], flags: NONE }, 'the protocol alone: its default action')
+  t.alike(understood(asked('crud swarms/swarm-1'), PROTOCOLS).form, { protocol: 'crud', action: 'read', uri: ['main', 'swarms/swarm-1'], args: [], flags: NONE }, 'the protocol alone: its default action; where nothing says another, at main')
   t.alike(understood(asked('crud/create swarms/x \'{"kind":"swarm"}\' two --flags log=debug physical'), PROTOCOLS, ['main']).form, { protocol: 'crud', action: 'create', uri: ['main', 'swarms/x'], args: ['{"kind":"swarm"}', 'two'], flags: { ...NONE, log: 'debug', physical: true } }, 'a quoted word one argument, its quotes off; flags a text each, one that stands alone true')
   t.is(understood(r, {}, ['other']), r, 'understood already: as it is')
   t.exception(() => understood(asked('crud/read "swarms'), PROTOCOLS), /quote not closed/, 'a quote not closed: said')

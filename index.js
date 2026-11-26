@@ -27,14 +27,14 @@
 // done (in both: the old place cleared). The boxes (lib/boxes.js) are layers.
 import { join } from 'bare-path'
 import { post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, INBOX, OUTBOX } from './lib/boxes.js'
-import { record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL } from './lib/record.js'
+import { record, stamp, tick, guid, continuationOf, CEILING, logger, LEVELS, ALWAYS, DETAIL } from './lib/record.js'
 import { FLAGS, LAYER, NONE, typed, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites } from './lib/flags.js'
 import { layer, AUTHOR, STREAMS, declarationOf } from './lib/layer.js'
 import { nameOf } from 'mycelium-container-document'
 import { query } from 'mrepo-base-xpath'
 import { viewOf, gitdirOf, setting, isWork, SETTING, MREPOS, SCRIPTS } from './lib/view.js'
 import { relative, from, within, slashed, unslashed, segmented, joined, positionOf } from 'mycelium-uri'
-import { interpret, read, carrying, formOf, layerFor, problems, passesOn, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
+import { interpret, read, carrying, layerFor, problems, passesOn, ROOT, MAIN, STANDING } from './lib/command.js'
 import { hookOf, hookAt, HOOKS, TRANSITIONS } from './lib/hooks.js'
 import { words, lineOf, parse, send, run as runLines } from './lib/lines.js'
 
@@ -42,7 +42,7 @@ export { follow } from './lib/follow.js'
 import { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS } from './lib/request.js'
 
 export { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS }
-export { read, carrying, lineOf, NONE, typed, MREPOS, SCRIPTS, post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, nameOf, STREAMS, declarationOf, INBOX, OUTBOX, record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
+export { read, carrying, lineOf, NONE, typed, MREPOS, SCRIPTS, post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, nameOf, STREAMS, declarationOf, INBOX, OUTBOX, record, stamp, tick, guid, continuationOf, CEILING, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, STANDING, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
 
 export const PENDING = 'request/pending/default'
 export const EXECUTE = 'request/execute'
@@ -190,14 +190,14 @@ async function refuse (ctx, name, request, message, origin, label = 'Refused') {
 }
 
 // The way into pending, the one handler every request passes: its form
-// understood from its line (its parts: <protocol>/<action> <URI>
-// <arguments>; its URI taken as written where its writer stands: main from
-// the inbox, the root for the mrepo's own), validated by where it comes
-// from, then queued; or refused (returned failed, in request/done, sent
-// back).
+// understood from its line (its words: <protocol>/<action> <URI>
+// <arguments>; its URI taken as written where it stands: the mrepo's
+// main, whoever asks), validated by where it comes from, then queued; or
+// refused (returned failed, in request/done, sent back).
 //   origin 'inbox'      the external checks: the API, the state as known now
 //   origin 'internal'   the mrepo's own (its runtime's, an action's):
-//                       trusted, its URI canonical only
+//                       trusted: any layer (by the flag), not asked whether
+//                       its protocol is active
 // No mark on the request: internal is having no record in the inbox, which
 // keeps its history (isInternal).
 // Its name: its offset (13 digits): the one it arrived with at the inbox;
@@ -206,7 +206,7 @@ async function refuse (ctx, name, request, message, origin, label = 'Refused') {
 // queues it; after the one that keeps it in done when it is not queued.
 // key: an answer collected for a request waiting here: the offset it had
 // where it was answered, its record's key.
-// -> { name, queued } or { name, refused: the message } (notRun: its flags)
+// -> { name, queued } or { name, refused: the message } (unrun: its flags)
 export const POINTER = '.pointer'
 const point = (ctx, name) => layer(ctx, PENDING).put(POINTER, { inbox: name }, `Inbox taken in to ${name}`)
 export async function admit (ctx, request, { origin, name = null, at = null, key = null }) {
@@ -223,12 +223,12 @@ export async function admit (ctx, request, { origin, name = null, at = null, key
   let why = null
   // what its flags keep from being run: nothing of it is (strict)
   let unrun = []
-  try { request = understood(request, ctx.protocols ?? {}, at ?? (origin === 'internal' ? OWN : OUTSIDE)) } catch (err) { if (err.unrun) unrun = err.unrun; else why = err.message }
+  try { request = understood(request, ctx.protocols ?? {}, at ?? STANDING) } catch (err) { if (err.unrun) unrun = err.unrun; else why = err.message }
   if (unrun.length) {
     for (const reason of unrun) request = noted(request, 'warn', 'request.flag', reason)
     const message = unrunLines(unrun)
     await refuse(ctx, name, request, message, origin, 'Not run')
-    return { name, refused: message, notRun: unrun }
+    return { name, refused: message, unrun }
   }
   if (!why) {
     try { why = check(request.form, await runtimeData(ctx), origin === 'internal' ? { internal: true } : { state: false }) } catch (err) { why = `runtime: ${err.message}` }
@@ -252,9 +252,8 @@ export async function isInternal (ctx, name) {
 
 // An internal request: the mrepo's own, submitted straight to the handler.
 // command: a line as typed, or its words. It names nowhere for its answer:
-// nobody waits for it. at: where its command stands (OWN, the mrepo's
-// root, by default; OUTSIDE, main, for a line written as from outside: a
-// hook's). -> admit's result
+// nobody waits for it. Written as anyone writes one: it stands at main
+// (at: a position there, the parts before its URI). -> admit's result
 export const internal = (ctx, command, name = nameOf(offsetOf(ctx)), { at = null } = {}) => admit(ctx, asked(Array.isArray(command) ? lineOf(command) : command, { from: ctx.uri ?? ctx.name, to: ctx.uri ?? ctx.name }), { origin: 'internal', name, at })
 
 // The inbox's records not yet taken in, first come, first served: those

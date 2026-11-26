@@ -140,19 +140,24 @@ setting.
   `haici/feedback`, at the same URI.
 - **A request's URI is relative**: no leading slash, as written where
   its writer stands. `.` is the position itself, and so is none given;
-  `./x` is `x`. From outside the writer stands at `main` (`MAIN`), so the
-  outside reaches `main` only; the mrepo's own requests, a hook, stand at
-  its root and name the layer first. A leading slash is refused.
-- **Inside, a URI is an array of segments**: in the form, the prefix
-  where the writer stands, then the URI as written. From outside
-  (`OUTSIDE`) that is the prefix `main` and one segment: `host` is
-  `["main", "host"]`, no URI `["main", "."]`; a command executed at a
-  position in `main` (`haicc`'s `goto`) stands there, the position a
-  segment between: `["main", "swarms/swarm-1", "."]`. The mrepo's own (`OWN`)
-  have no prefix: `["."]`, `["runtime/hooks"]`. Outside, a URI is one
-  segment, as it is written. The
-  URI functions are `mycelium-uri`'s, offered here too: `relative`,
-  `segmented`, `joined`, `positionOf`, `slashed`.
+  `./x` is `x`. A leading slash is refused.
+- **Inside, a URI is a chain of parts, one pattern for every request**
+  (the human, 2026-11-26: "to avoid having to parse repeatedly"; "it
+  always starts with the mrepo layer to begin with. That is then follow
+  by URI local root positions, ending in a relative end URI"; "use one
+  path"): the layer first, then the local root positions gone through,
+  then the URI as written, the last; kept apart, so no boundary is
+  parsed again. A request stands at `main` (`STANDING`) unless a
+  position or a flag says another: `host` is `["main", "host"]`, no URI
+  `["main", "."]`; a command executed at a position in `main`
+  (`haicc`'s `goto`) stands there: `["main", "swarms/swarm-1", "."]`;
+  another layer by its flag: `["runtime", "hooks"]`. What led to this
+  mrepo is not in it: forward visibility only. The mrepo's own requests
+  (a hook's line) are written the same way; they differ in what they
+  are allowed (any layer, not asked whether a protocol is active), not
+  in their URI. Read as one URI, for a query: its parts joined
+  (`joined`). The URI functions are `mycelium-uri`'s, offered here too:
+  `relative`, `segmented`, `joined`, `positionOf`, `slashed`.
 - **Checked by its types at the inbox** (`wrong(ctx, record)`): the
   record without its value and the request, each asked of the schema
   registry as the runtime reaches it (`ctx.registry`, `valid(uri,

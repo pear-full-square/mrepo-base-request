@@ -97,19 +97,21 @@ test('no schema registry: nothing is taken in', async (t) => {
   t.alike(await principals(ctx), [])
 })
 
-test('the mrepo\'s own: a line or its words, at its root; trusted, its URI and its arguments still checked; nobody waits', async (t) => {
+test('the mrepo\'s own: a line or its words, written as anyone writes one; trusted, its URI and its arguments still checked; nobody waits', async (t) => {
   const ctx = await mrepo(t)
-  const a = await internal(ctx, ['crud/create', 'main/notes/a', '{"n": 1}'])
+  const a = await internal(ctx, ['crud/create', 'notes/a', '{"n": 1}'])
   t.ok(a.queued)
   const queued = (await read(ctx, PENDING, a.name)).value
-  t.alike([queued.command, queued.from, queued.to, queued.reply, queued.form.uri, queued.form.args], ['crud/create main/notes/a "{\\"n\\": 1}"', 'local/x', 'local/x', null, ['main/notes/a'], ['{"n": 1}']], 'its words written as a line, read back the same; from and to itself, its answer nowhere')
+  t.alike([queued.command, queued.from, queued.to, queued.reply, queued.form.uri, queued.form.args], ['crud/create notes/a "{\\"n\\": 1}"', 'local/x', 'local/x', null, ['main', 'notes/a'], ['{"n": 1}']], 'its words written as a line, read back the same; from and to itself, its answer nowhere')
   t.is(await isInternal(ctx, a.name), true, 'no record of it in the inbox')
-  const b = await internal(ctx, 'nope/read main/x')
+  const b = await internal(ctx, 'nope/read x')
   t.ok(b.queued, 'a protocol not loaded: not asked, the mrepo\'s own')
-  const c = await internal(ctx, 'crud/create main/notes/a')
+  const c = await internal(ctx, 'crud/create notes/a')
   t.alike([c.refused, (await read(ctx, DONE, c.name)).value.returned.status], ['Refused, nothing run.\nmissing argument: document', 'failed'], 'what its action asks for and is not given: refused')
-  const d = await internal(ctx, 'crud/read .', undefined, { at: ['main'] })
-  t.alike((await read(ctx, PENDING, d.name)).value.form.uri, ['main', '.'], 'a line written as from outside (a hook\'s): at main')
+  const d = await internal(ctx, 'crud/read hooks --flags layer=runtime')
+  t.alike((await read(ctx, PENDING, d.name)).value.form.uri, ['runtime', 'hooks'], 'another layer: by its flag, as anyone names one; allowed, the mrepo\'s own')
+  const e = await internal(ctx, 'crud/read .', undefined, { at: ['main', 'swarms/swarm-1'] })
+  t.alike((await read(ctx, PENDING, e.name)).value.form.uri, ['main', 'swarms/swarm-1', '.'], 'at a position: the parts before its URI')
   await request(ctx)
   t.alike((await principals(ctx)).map(p => p.id), [a.name], 'one at a time, first come, first served')
 })
@@ -117,7 +119,7 @@ test('the mrepo\'s own: a line or its words, at its root; trusted, its URI and i
 test('a request waiting for another mrepo\'s answer: collected from its outbox, by the offset it has there; on the principal\'s branch, its key that offset', async (t) => {
   const ctx = await mrepo(t)
   const child = join(ctx.dir, 'mrepos', 'y')
-  const { name } = await internal(ctx, 'crud/read main/y')
+  const { name } = await internal(ctx, 'crud/read y')
   await request(ctx)
   // execute's part, stood in for: sent on, what it waits for said on it
   const there = 1795312345678
