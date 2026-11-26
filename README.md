@@ -28,7 +28,7 @@ setting.
 
 - **A record around a request**, one level (`lib/record.js`, `record`):
   the transport's envelope, `topic`, `key`, `offset`, `timestamp`
-  (milliseconds), `headers` (empty for now), and its value, the request;
+  (a time as JSON holds one, ISO 8601), `headers` (empty for now), and its value, the request;
   each hand-over a new record, its topic the new place, around the same
   request. Their types are the runtime package's
   (`haiccing/base-package-runtime`, `types/`: `record`, `request`),
