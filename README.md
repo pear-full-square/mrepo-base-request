@@ -91,7 +91,7 @@ setting.
   in view, one compact line a record, its topic the full path; `settled()`:
   every request done (none pending or executing in any of them).
 - **A request's form**: `{ protocol, action, uri, args, flags }`, the
-  arguments a list of texts, unnamed, the flags a text each. A request
+  arguments a list of texts, unnamed, the flags a record, a field a flag. A request
   is asked as a command line, as it is typed: `<protocol>/<action> <URI>
   <argument>...`. Its line is read by the one parser (`words`, the
   shell's way; `lineOf`, words written as a line, the way back) and
@@ -105,11 +105,14 @@ setting.
   `haicc`, at most 64 KiB, and the position it is run for.
 - **Flags** (`lib/flags.js`, the flags there are in `flags/`, a folder
   each): written after a command's URI, after
-  `--flags`, space separated, a flag alone (its value the text `true`,
-  `STANDS`) or `key=value`: that step's.
+  `--flags`, space separated, a flag alone or `key=value`: that step's.
   The list runs to the end of the command, or to a `--` with its
-  arguments after it. In the form a map, `flags`, a text each (`chained`: those that hold
-  down a chain, for a command sent on). After the URI of
+  arguments after it. In the form a record, `flags`, a field each flag there is, each its
+  own type (`typed`, `NONE`; the runtime package's `requestFlags`): one
+  that stands alone a boolean, false when not written; one that takes a
+  value a text, null when not written. Every function reads the map as
+  written and the record the same (`chained`: those that hold down a
+  chain, for a command sent on). After the URI of
   an action that passes its words on (its config: `command: true`) the
   list is that step's and the next command starts after the `--` that
   closes it. A list is closed by `--` or by the end of the command,

@@ -3,7 +3,7 @@ import fs, { mkdtempSync, rmSync } from 'bare-fs'
 import { join } from 'bare-path'
 import { tmpdir } from 'bare-os'
 import { p2pgitBackend, openRepo, writer } from 'mycelium-git'
-import { request, admit, internal, ensure, AUTHOR, principals, begin, wrong, refusal, drop, post, layer, record, asked, returned, noted, isReturned, isInternal, outboxOf, nameOf, PENDING, EXECUTE, DONE, TYPES } from '../index.js'
+import { request, admit, internal, ensure, AUTHOR, principals, begin, wrong, refusal, drop, post, layer, record, asked, returned, noted, isReturned, isInternal, outboxOf, nameOf, PENDING, EXECUTE, DONE, TYPES, NONE } from '../index.js'
 
 // The schema registry as the runtime reaches it, stood in for: what it is
 // asked noted, a value refused where it carries `odd` (the types themselves
@@ -37,7 +37,7 @@ test('a request from the inbox: checked by its types, understood from its line, 
   t.alike(ctx.registry.asked, [TYPES.record, TYPES.request], 'the record and the request, each asked of the registry')
   const [p] = await principals(ctx)
   t.alike([p.id, p.waits, p.response], [nameOf(o), null, null], 'begun on its own branch, under its offset')
-  t.alike([p.request.command, p.request.form, p.request.returned], ['crud/read notes/hello --flags log=debug', { protocol: 'crud', action: 'read', uri: ['main', 'notes/hello'], args: [], flags: { log: 'debug' } }, null], 'its line as typed; its form understood where the outside stands, its flags a text each')
+  t.alike([p.request.command, p.request.form, p.request.returned], ['crud/read notes/hello --flags log=debug', { protocol: 'crud', action: 'read', uri: ['main', 'notes/hello'], args: [], flags: { ...NONE, log: 'debug' } }, null], 'its line as typed; its form understood where the outside stands, its flags each its type')
   t.alike(await layer(ctx, PENDING).list(), [], 'out of the queue')
   t.is(await isInternal(ctx, nameOf(o)), false)
   // execute's part, stood in for: the request returned, in request/execute
@@ -84,7 +84,7 @@ test('refused at the inbox: returned failed, saying why in words; in done, sent 
   t.absent(back.has(dropped.quiet), 'one that names nowhere for its answer: kept in done, not sent')
   t.alike((await said(dropped.quiet))[0], 'failed')
   const [p] = await principals(ctx)
-  t.alike([p.id, p.request.form], [nameOf(dropped.good), { protocol: 'help', action: 'annotate', uri: ['main', 'crud/read'], args: [], flags: {} }], 'the one that is right: begun, the refused ones past (its action the protocol\'s default)')
+  t.alike([p.id, p.request.form], [nameOf(dropped.good), { protocol: 'help', action: 'annotate', uri: ['main', 'crud/read'], args: [], flags: NONE }], 'the one that is right: begun, the refused ones past (its action the protocol\'s default)')
   t.is(refusal('a', 'b'), 'Refused, nothing run.\na\nb')
 })
 

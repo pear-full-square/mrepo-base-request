@@ -28,7 +28,7 @@
 import { join } from 'bare-path'
 import { post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, INBOX, OUTBOX } from './lib/boxes.js'
 import { record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL } from './lib/record.js'
-import { FLAGS, LAYER, STANDS, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites } from './lib/flags.js'
+import { FLAGS, LAYER, NONE, typed, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites } from './lib/flags.js'
 import { layer, AUTHOR, STREAMS, declarationOf } from './lib/layer.js'
 import { nameOf } from 'mycelium-container-document'
 import { query } from 'mrepo-base-xpath'
@@ -42,7 +42,7 @@ export { follow } from './lib/follow.js'
 import { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS } from './lib/request.js'
 
 export { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS }
-export { read, lineOf, STANDS, MREPOS, SCRIPTS, post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, nameOf, STREAMS, declarationOf, INBOX, OUTBOX, record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
+export { read, lineOf, NONE, typed, MREPOS, SCRIPTS, post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, nameOf, STREAMS, declarationOf, INBOX, OUTBOX, record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
 
 export const PENDING = 'request/pending/default'
 export const EXECUTE = 'request/execute'
@@ -221,9 +221,9 @@ export async function admit (ctx, request, { origin, name = null, at = null, key
   // (what is wrong with the request itself is said as it is; anything else
   // that fails taking it in is the runtime's)
   let why = null
-  try { request = understood(request, ctx.protocols ?? {}, at ?? (origin === 'internal' ? OWN : OUTSIDE)) } catch (err) { why = err.message }
   // what its flags keep from being run: nothing of it is (strict)
-  const unrun = !why ? problems(request.form, ctx.protocols ?? {}) : []
+  let unrun = []
+  try { request = understood(request, ctx.protocols ?? {}, at ?? (origin === 'internal' ? OWN : OUTSIDE)) } catch (err) { if (err.unrun) unrun = err.unrun; else why = err.message }
   if (unrun.length) {
     for (const reason of unrun) request = noted(request, 'warn', 'request.flag', reason)
     const message = unrunLines(unrun)
