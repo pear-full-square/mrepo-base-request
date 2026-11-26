@@ -39,6 +39,6 @@ module's test fails for a folder not listed).
 A flag that is not one, a value its flag does not take (a tail flag
 with no text after it), a rewrite on a command that is not the last, a
 rewrite whose protocol is not here, more than one rewrite:
-nothing of the command is executed. The request completes, not failed:
-its output `{ run: false, command, why }`, the reasons, each a warning
-in its log (`request.flag`). The `haicc` command exits 1 for it.
+nothing of the command is executed. The request is returned `failed`:
+`Not run: its flags.`, then the reasons, a line each, each a warning in
+its log too (`request.flag`).

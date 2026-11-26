@@ -2,7 +2,7 @@ import test from 'brittle'
 import { readdirSync } from 'bare-fs'
 import { join, dirname } from 'bare-path'
 import { fileURLToPath } from 'bare-url'
-import { check, matches, missing, hookOf, parse, words, record, wrap, stamp, tick, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, modeOf, flagsOf, sorted, chained, rewrites, problems, notRun, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN, send } from '../index.js'
+import { check, matches, missing, hookOf, parse, words, record, tick, continuationOf, CEILING, logger, LEVELS, FLAGS, LAYER, layerOf, modeOf, flagsOf, sorted, chained, rewrites, problems, interpret, read, lineOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN, send } from '../index.js'
 
 // The protocols as a runtime loaded them: each action's URIs (patterns
 // written at main, where the outside stands), and the states that allow it
@@ -43,14 +43,6 @@ test('a command interpreted: its parts, the default action, the URI its segments
   t.exception(() => interpret([]), /not a command/)
   t.exception(() => interpret(['a/b/c']), /not a command: a\/b\/c/)
   t.exception(() => interpret(['boot/deploy', 7]), /not a command/)
-  t.alike(formOf('service/start', {}, OUTSIDE), { command: 'service/start', protocol: 'service', action: 'start', uri: ['main', '.'], args: [] }, 'a value given as a command: the form filled in, the command kept')
-  t.alike(formOf({ command: ['service/start'] }), { command: ['service/start'], protocol: 'service', action: 'start', uri: ['.'], args: [] }, 'the mrepo\'s own by default')
-  t.alike(formOf({ protocol: 'service', action: 'start', uri: '.' }, {}, OUTSIDE), { protocol: 'service', action: 'start', uri: ['main', '.'] }, 'a form given filled in: its URI, one segment as written, taken where its writer stands, the same')
-  t.alike(formOf({ protocol: 'boot', action: 'deploy', uri: 'host', args: ['x'] }, {}, OUTSIDE).uri, ['main', 'host'])
-  t.alike(formOf({ protocol: 'service', action: 'start' }, {}, OUTSIDE).uri, ['main', '.'], 'no URI: the position itself')
-  t.exception(() => formOf({ protocol: 'service', action: 'start', uri: '/' }, {}, OUTSIDE), /not a relative URI/)
-  t.exception(() => formOf({ protocol: 'service', action: 'start', uri: ['main', '.'] }, {}, OUTSIDE), /not a URI: one segment, as it is written/, 'from outside a URI is one segment, never the array')
-  t.is(formOf(7), 7, 'not a request: left as it is, for the check to say')
 })
 
 test('missing: what an action\'s config asks for and the request does not give', (t) => {
@@ -145,12 +137,16 @@ test('hooks: a file a transition, its lines simple commands; a script\'s lines, 
   t.exception(() => parse('# only a comment'), /missing argument: script/)
 })
 
-test('a line sent: its request\'s offset given back beside its completed form', async (t) => {
+test('a line sent: a request, the mrepo\'s own; its offset given back beside the request returned', async (t) => {
   const submitted = []
-  const runtime = { uri: 'local/x', submit: async core => { submitted.push(core); return 1764000000123 }, answer: async offset => ({ output: { asked: offset } }) }
-  const form = await send(runtime, ['crud/read', '.'])
-  t.alike(form, { output: { asked: 1764000000123 }, offset: 1764000000123 }, 'its answer, and the offset its request was given')
-  t.alike(submitted[0].value, ['crud/read', '.'], 'the command as its parts')
+  const back = { returned: { status: 'done', message: 'Read.', attachments: [] } }
+  const runtime = { uri: 'local/x', submit: async request => { submitted.push(request); return 1764000000123 }, answer: async () => back }
+  t.alike(await send(runtime, ['crud/create', 'a b', '{"n":1}']), { offset: 1764000000123, request: back }, 'the request returned, and the offset it was given')
+  t.alike([submitted[0].command, submitted[0].from, submitted[0].to, submitted[0].reply], ['crud/create "a b" "{\\"n\\":1}"', 'local/x', 'local/x', '/local/x/outbox'], 'its words written as a line; from and to the mrepo, its answer to its outbox')
+  await send(runtime, 'crud/read .')
+  t.is(submitted[1].command, 'crud/read .', 'a line: as typed')
+  for (const w of [['a'], ['a b', ''], ['it\'s', '"q"', 'back\\slash', 'tab\there']]) t.alike(words(lineOf(w)), w, 'words written as a line read back the same')
+  t.alike(await send({ own: async line => ({ line }) }, ['service/start']), { offset: null, request: { line: 'service/start' } }, 'the runtime\'s own: placed by it, no offset')
 })
 
 test('a script\'s command: its URI where its lines run, then the lines, one argument', (t) => {
@@ -160,15 +156,15 @@ test('a script\'s command: its URI where its lines run, then the lines, one argu
 
 test('flags: written after a command\'s URI, that step\'s; -- says where what follows starts', (t) => {
   const haicc = { haicc: { default: 'goto', actions: { goto: { command: true } } } }
-  t.alike(flagsOf(['log=debug', 'error-on-empty', 'a=b=c']), { log: 'debug', 'error-on-empty': true, a: 'b=c' }, 'a flag alone, or key=value with no space; space separated')
+  t.alike(flagsOf(['log=debug', 'error-on-empty', 'a=b=c']), { log: 'debug', 'error-on-empty': 'true', a: 'b=c' }, 'a flag alone, or key=value with no space; space separated')
   t.alike(interpret(['crud/read', 'swarms/*', '--flags', 'log=debug'], {}, OUTSIDE), { protocol: 'crud', action: 'read', uri: ['main', 'swarms/*'], args: [], flags: { log: 'debug' } }, 'after the URI, to the end of the command')
-  t.alike(interpret('crud/create swarms/s1 --flags log=verbose other -- {"n":1}', {}, OUTSIDE), { protocol: 'crud', action: 'create', uri: ['main', 'swarms/s1'], args: ['{"n":1}'], flags: { log: 'verbose', other: true } }, 'or ended by --: the arguments go on after it')
+  t.alike(interpret('crud/create swarms/s1 --flags log=verbose other -- {"n":1}', {}, OUTSIDE), { protocol: 'crud', action: 'create', uri: ['main', 'swarms/s1'], args: ['{"n":1}'], flags: { log: 'verbose', other: 'true' } }, 'or ended by --: the arguments go on after it')
   t.alike(interpret(['crud/create', 'swarms/s1', '{"n":1}', '--flags', 'log=debug'], {}, OUTSIDE), { protocol: 'crud', action: 'create', uri: ['main', 'swarms/s1'], args: ['{"n":1}'], flags: { log: 'debug' } }, 'after its arguments: taken the same way')
   t.alike(interpret(['service/start', '--flags', 'log=debug'], {}, OUTSIDE), { protocol: 'service', action: 'start', uri: ['main', '.'], args: [], flags: { log: 'debug' } }, 'no URI: the flags are not taken for one')
   t.absent('flags' in interpret(['crud/read', 'swarms'], {}, OUTSIDE), 'none written: no flags in the form')
   // a command that passes its words on: the list after its URI is its own, -- where the next command starts
   t.alike(interpret(['haicc', 'host', '--flags', 'log=debug', '--', 'crud/read', '.'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['crud/read', '.'], flags: { log: 'debug' } }, 'haicc host --flags log=debug -- crud/read .: the step\'s at host')
-  t.alike(interpret(['haicc', 'host', '--flags', 'nope', 'log=loud', '--', 'crud/read', '.'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['crud/read', '.'], flags: { nope: true, log: 'loud' } }, 'whatever is written before the --: a flag there is none of too (ignored later, with a warning)')
+  t.alike(interpret(['haicc', 'host', '--flags', 'nope', 'log=loud', '--', 'crud/read', '.'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['crud/read', '.'], flags: { nope: 'true', log: 'loud' } }, 'whatever is written before the --: a flag there is none of too (ignored later, with a warning)')
   t.alike(interpret(['haicc', 'host', 'crud/read', 'swarms', '--flags', 'log=debug'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['crud/read', 'swarms', '--flags', 'log=debug'] }, 'after the next command\'s URI: that command\'s, passed on as written')
   t.alike(interpret(['haicc', 'host', '--flags', 'log=info', '--', 'haicc', 'node-1', '--flags', 'log=debug', '--', 'crud/read', '.'], haicc, OUTSIDE), { protocol: 'haicc', action: 'goto', uri: ['main', 'host'], args: ['haicc', 'node-1', '--flags', 'log=debug', '--', 'crud/read', '.'], flags: { log: 'info' } }, 'a list at each step, each closed by its --')
   t.exception(() => interpret(['haicc', 'host', '--flags', 'log=debug', 'crud/read', '.'], haicc, OUTSIDE), /not a command: no command after the flags of haicc \(-- closes a flag list, the command follows it\)/, 'strict: only -- or the end of the command closes the list; not closed, the command was taken for flags: said')
@@ -176,31 +172,27 @@ test('flags: written after a command\'s URI, that step\'s; -- says where what fo
   t.exception(() => interpret(['haicc', 'host', '--flags', 'log=debug', '--'], haicc, OUTSIDE), /no command after the flags of haicc/)
   t.exception(() => interpret(['--flags', 'log=debug', '--', 'crud/read', 'swarms']), /not a command: flags follow a command's URI/, 'in front of a command: not a place for them')
   // a flag holds through a chain until changed: what came with the request, under what its own command says
-  t.alike(formOf({ command: ['crud/read', 'swarms'], flags: { log: 'debug' } }, {}, OUTSIDE).flags, { log: 'debug' }, 'the sender\'s flags come with a command sent on')
-  t.alike(formOf({ command: ['crud/read', 'swarms', '--flags', 'log=info'], flags: { log: 'debug', other: true } }, {}, OUTSIDE).flags, { log: 'info', other: true }, 'until changed')
-  t.absent('flags' in formOf('service/start', {}, OUTSIDE))
+  t.absent('flags' in read(['service/start'], {}, OUTSIDE))
   // main is the default layer of a request from outside; a flag changes it
-  t.alike(formOf(['crud/read', 'done/*', '--flags', 'layer=request'], {}, OUTSIDE).uri, ['request', 'done/*'], 'layer=request: the command\'s own URI read at that layer')
-  t.alike(formOf(['crud/read', 'done/*'], {}, OUTSIDE).uri, ['main', 'done/*'], 'without it: main, the default')
-  t.alike(formOf({ command: ['crud/read', 'done/*'], flags: { layer: 'request' } }, {}, OUTSIDE).uri, ['request', 'done/*'], 'come with the request (a command sent on): held')
-  t.alike(formOf({ command: ['crud/read', 'x', '--flags', 'layer=main'], flags: { layer: 'request' } }, {}, OUTSIDE).uri, ['main', 'x'], 'until changed: back to main')
-  t.alike(formOf(['crud/read', '.', '--flags', 'layer=request/done'], {}, ['main', 'swarms/swarm-1']).uri, ['request/done', 'swarms/swarm-1', '.'], 'a layer of several parts; written at a position: the layer in main\'s place')
-  t.alike(formOf(['haicc', 'host', '--flags', 'layer=request', '--', 'crud/read', 'done/*'], haicc, OUTSIDE).uri, ['main', 'host'], 'a command that passes on: its URI is a position, and positions are main\'s; the flag goes on with the command')
-  t.alike(formOf(['crud/read', 'x', '--flags', 'layer=Not_A_Layer'], {}, OUTSIDE).uri, ['main', 'x'], 'a value it does not take: main (ignored, with its warning)')
-  t.alike(formOf(['crud/read', 'runtime/hooks', '--flags', 'layer=request'], {}, OWN).uri, ['runtime/hooks'], 'the mrepo\'s own: the layer first in its URI already')
-  t.alike([layerOf({ layer: 'request' }), layerOf({}), layerOf(undefined), layerOf({ layer: true }), LAYER], ['request', 'main', 'main', 'main', 'main'])
-  t.is(check(formOf(['rest/get', 'done/r1', '--flags', 'layer=request'], protocols, OUTSIDE), at('started')), null, 'checked at its layer: offered there as its config says')
+  t.alike(read(['crud/read', 'done/*', '--flags', 'layer=request'], {}, OUTSIDE).uri, ['request', 'done/*'], 'layer=request: the command\'s own URI read at that layer')
+  t.alike(read(['crud/read', 'done/*'], {}, OUTSIDE).uri, ['main', 'done/*'], 'without it: main, the default')
+  t.alike(read(['crud/read', '.', '--flags', 'layer=request/done'], {}, ['main', 'swarms/swarm-1']).uri, ['request/done', 'swarms/swarm-1', '.'], 'a layer of several parts; written at a position: the layer in main\'s place')
+  t.alike(read(['haicc', 'host', '--flags', 'layer=request', '--', 'crud/read', 'done/*'], haicc, OUTSIDE).uri, ['main', 'host'], 'a command that passes on: its URI is a position, and positions are main\'s; the flag goes on with the command')
+  t.alike(read(['crud/read', 'x', '--flags', 'layer=Not_A_Layer'], {}, OUTSIDE).uri, ['main', 'x'], 'a value it does not take: main (ignored, with its warning)')
+  t.alike(read(['crud/read', 'runtime/hooks', '--flags', 'layer=request'], {}, OWN).uri, ['runtime/hooks'], 'the mrepo\'s own: the layer first in its URI already')
+  t.alike([layerOf({ layer: 'request' }), layerOf({}), layerOf(undefined), layerOf({ layer: 'true' }), LAYER], ['request', 'main', 'main', 'main', 'main'])
+  t.is(check(read(['rest/get', 'done/r1', '--flags', 'layer=request'], protocols, OUTSIDE), at('started')), null, 'checked at its layer: offered there as its config says')
   t.is(check({ protocol: 'rest', action: 'get', uri: ['request', 'done/r1'] }, at('started')), 'not offered: rest get at request/done/r1', 'another layer without the flag: not where it stands')
   t.alike(sorted({ layer: 'request/done' }), { flags: { layer: 'request/done' }, ignored: [] })
-  t.is(sorted({ layer: true }).ignored[0].why, 'layer=: not a value it takes')
+  t.is(sorted({ layer: 'true' }).ignored[0].why, 'layer=: not a value it takes')
   // the enumeration: one that is not there, or a value its flag does not take, is ignored, and said
   t.alike(Object.keys(FLAGS), ['log', 'layer', 'container', 'help', 'feedback', 'physical'])
-  t.alike([modeOf({}), modeOf(undefined), modeOf({ physical: true }), modeOf({ physical: 'yes' })], ['logical', 'logical', 'physical', 'logical'], 'how a URI is read: logical when nothing is said; physical where its flag is written, as it stands alone')
+  t.alike([modeOf({}), modeOf(undefined), modeOf({ physical: 'true' }), modeOf({ physical: 'yes' })], ['logical', 'logical', 'physical', 'logical'], 'how a URI is read: logical when nothing is said; physical where its flag is written, as it stands alone')
   t.alike(sorted({ log: 'verbose' }), { flags: { log: 'verbose' }, ignored: [] })
-  const s = sorted({ log: 'loud', nope: true, other: 'x' })
+  const s = sorted({ log: 'loud', nope: 'true', other: 'x' })
   t.alike(s.flags, {}, 'ignored')
   t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (container, feedback, help, layer, log, physical)', 'no flag: other (container, feedback, help, layer, log, physical)'])
-  t.alike(sorted({ log: true }).ignored.map(i => i.why), ['log=: not one of info, verbose, debug'], 'a flag that takes a value, written alone')
+  t.alike(sorted({ log: 'true' }).ignored.map(i => i.why), ['log=: not one of info, verbose, debug'], 'a flag that takes a value, written alone')
   t.alike(sorted(undefined), { flags: {}, ignored: [] })
 })
 
@@ -213,41 +205,37 @@ test('the flag unit: a folder a flag, each listed, its declaration; what holds d
     t.ok(f.values === null || Array.isArray(f.values) || f.values instanceof RegExp, `${name}: its values, a list, a pattern or none`)
     if (f.kind === 'rewrite') t.ok(typeof f.protocol === 'string' && typeof f.rewrite === 'function', `${name}: a rewrite names its protocol and how it rewrites`)
   }
-  t.alike(chained({ log: 'debug', help: true, layer: 'request', nope: true }), { log: 'debug', layer: 'request', nope: true }, 'held down a chain: all but a step\'s or the last command\'s (one there is none of: carried, said where it arrives)')
-  t.alike(rewrites({ log: 'debug', help: true }).map(([flag]) => flag), ['help'])
+  t.alike(chained({ log: 'debug', help: 'true', layer: 'request', nope: 'true' }), { log: 'debug', layer: 'request', nope: 'true' }, 'held down a chain: all but a step\'s or the last command\'s (one there is none of: carried, said where it arrives)')
+  t.alike(rewrites({ log: 'debug', help: 'true' }).map(([flag]) => flag), ['help'])
   // help: the command it is on becomes help/annotate at the same URI, before the door
   const both = { crud: { actions: { read: { uris: ['**'] } } }, help: { default: 'annotate', actions: { annotate: { uris: ['**'], args: ['command'] } } } }
-  const help = formOf(['crud/read', 'swarms', 'x', '--flags', 'help', 'log=debug'], both, OUTSIDE)
-  t.alike([help.protocol, help.action, help.uri, help.args, help.flags, help.rewritten, help.command], ['help', 'annotate', ['main', 'swarms'], ['crud/read', 'x'], { log: 'debug' }, 'help', ['crud/read', 'swarms', 'x', '--flags', 'help', 'log=debug']], 'help/annotate at its URI, its arguments the command\'s <protocol>/<action> and its own; the flag gone, the others kept; the command as typed')
+  const help = read(['crud/read', 'swarms', 'x', '--flags', 'help', 'log=debug'], both, OUTSIDE)
+  t.alike([help.protocol, help.action, help.uri, help.args, help.flags], ['help', 'annotate', ['main', 'swarms'], ['crud/read', 'x'], { log: 'debug' }], 'help/annotate at its URI, its arguments the command\'s <protocol>/<action> and its own; its flag gone, the others kept')
   t.is(check(help, { service: null, protocols: both, active: { help: {} } }), null, 'the door checks the rewritten command')
-  t.absent('flags' in formOf({ command: ['crud/read', 'x'], flags: { help: true } }, both, OUTSIDE), 'the last command\'s only: not carried down a chain')
   // strict: nothing of the command run, said why
-  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'nope', 'log=loud'], both, OUTSIDE), both), ['no flag: nope (container, feedback, help, layer, log, physical)', 'log=loud: not one of info, verbose, debug'], 'a flag that is none; a value its flag does not take: each said')
-  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'help=yes'], both, OUTSIDE), both), ['help takes no value'], 'a value its flag does not take')
-  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'help'], { crud: both.crud }, OUTSIDE), { crud: both.crud }), ['help: no protocol help here'], 'a rewrite whose protocol is not here: not rewritten, said')
+  t.alike(problems(read(['crud/read', 'x', '--flags', 'nope', 'log=loud'], both, OUTSIDE), both), ['no flag: nope (container, feedback, help, layer, log, physical)', 'log=loud: not one of info, verbose, debug'], 'a flag that is none; a value its flag does not take: each said')
+  t.alike(problems(read(['crud/read', 'x', '--flags', 'help=yes'], both, OUTSIDE), both), ['help takes no value'], 'a value its flag does not take')
+  t.alike(problems(read(['crud/read', 'x', '--flags', 'help'], { crud: both.crud }, OUTSIDE), { crud: both.crud }), ['help: no protocol help here'], 'a rewrite whose protocol is not here: not rewritten, said')
   const haicc = { ...both, haicc: { default: 'goto', actions: { goto: { command: true, uris: ['**'] } } } }
-  t.alike(problems(formOf(['haicc', 'host', '--flags', 'help', '--', 'crud/read', 'x'], haicc, OUTSIDE), haicc), ['help: on the last command only (it rewrites the command it is on)'], 'a rewrite on a command that passes on: not the last')
-  t.alike(formOf(['haicc', 'host', 'crud/read', 'x', '--flags', 'help'], haicc, OUTSIDE).args, ['crud/read', 'x', '--flags', 'help'], 'written after the last command\'s URI: that command\'s, passed on as written')
-  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'log=debug'], both, OUTSIDE), both), [], 'nothing in the way')
+  t.alike(problems(read(['haicc', 'host', '--flags', 'help', '--', 'crud/read', 'x'], haicc, OUTSIDE), haicc), ['help: on the last command only (it rewrites the command it is on)'], 'a rewrite on a command that passes on: not the last')
+  t.alike(read(['haicc', 'host', 'crud/read', 'x', '--flags', 'help'], haicc, OUTSIDE).args, ['crud/read', 'x', '--flags', 'help'], 'written after the last command\'s URI: that command\'s, passed on as written')
+  t.alike(problems(read(['crud/read', 'x', '--flags', 'log=debug'], both, OUTSIDE), both), [], 'nothing in the way')
   // feedback: a rewrite, last, a tail: every word after it its text; the command becomes haici/feedback at the same URI
   const fb = { ...both, haici: { default: 'feedback', actions: { feedback: { uris: ['**'], args: ['text', 'command', 'arguments?'] } } } }
   t.ok(FLAGS.feedback.tail === true && FLAGS.feedback.kind === 'rewrite' && FLAGS.feedback.scope === 'last' && FLAGS.feedback.protocol === 'haici', 'feedback: a rewrite, last, a tail, its protocol haici')
-  const f = formOf(['crud/read', 'swarms', 'x', '--flags', 'log=debug', 'feedback', 'the', 'list', 'is', 'empty'], fb, OUTSIDE)
-  t.alike([f.protocol, f.action, f.uri, f.args, f.flags, f.rewritten], ['haici', 'feedback', ['main', 'swarms'], ['the list is empty', 'crud/read', 'x'], { log: 'debug' }, 'feedback'], 'haici/feedback at its URI, its arguments the text, then the command\'s <protocol>/<action> and its own; the flags before it kept')
-  t.alike(f.command, ['crud/read', 'swarms', 'x', '--flags', 'log=debug', 'feedback', 'the', 'list', 'is', 'empty'], 'the command as typed')
+  const f = read(['crud/read', 'swarms', 'x', '--flags', 'log=debug', 'feedback', 'the', 'list', 'is', 'empty'], fb, OUTSIDE)
+  t.alike([f.protocol, f.action, f.uri, f.args, f.flags], ['haici', 'feedback', ['main', 'swarms'], ['the list is empty', 'crud/read', 'x'], { log: 'debug' }], 'haici/feedback at its URI, its arguments the text, then the command\'s <protocol>/<action> and its own; the flags before it kept')
   t.is(check(f, { service: null, protocols: fb, active: { haici: {} } }), null, 'the door checks the rewritten command')
-  t.alike(formOf(['crud/read', 'x', '--flags', 'feedback', 'a', '--', 'b', '--flags', 'nope', 'c=d'], fb, OUTSIDE).args, ['a -- b --flags nope c=d', 'crud/read'], 'the tail: every word after it its text, a -- and words that look like flags too')
-  t.alike(formOf(['crud/read', 'x', '--flags', 'feedback=first', 'and', 'more'], fb, OUTSIDE).args[0], 'first and more', 'written feedback=<word>: that word the text\'s first')
-  t.alike(formOf(['crud/read', 'x', '--flags', 'help', 'feedback', 'y'], fb, OUTSIDE).flags, { help: true, feedback: 'y' }, 'the flags before it its list\'s (two rewrites: neither applied)')
-  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'feedback'], fb, OUTSIDE), fb), ['feedback: its text follows it (--flags feedback <text>)'], 'no text after it: not run, said')
-  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'help', 'feedback', 'y'], fb, OUTSIDE), fb), ['one rewrite at a time: help, feedback'], 'two rewrites: not run')
-  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'feedback', 'y'], both, OUTSIDE), both), ['feedback: no protocol haici here'], 'its protocol not here: not rewritten, said')
+  t.alike(read(['crud/read', 'x', '--flags', 'feedback', 'a', '--', 'b', '--flags', 'nope', 'c=d'], fb, OUTSIDE).args, ['a -- b --flags nope c=d', 'crud/read'], 'the tail: every word after it its text, a -- and words that look like flags too')
+  t.alike(read(['crud/read', 'x', '--flags', 'feedback=first', 'and', 'more'], fb, OUTSIDE).args[0], 'first and more', 'written feedback=<word>: that word the text\'s first')
+  t.alike(read(['crud/read', 'x', '--flags', 'help', 'feedback', 'y'], fb, OUTSIDE).flags, { help: 'true', feedback: 'y' }, 'the flags before it its list\'s (two rewrites: neither applied)')
+  t.alike(problems(read(['crud/read', 'x', '--flags', 'feedback'], fb, OUTSIDE), fb), ['feedback: its text follows it (--flags feedback <text>)'], 'no text after it: not run, said')
+  t.alike(problems(read(['crud/read', 'x', '--flags', 'help', 'feedback', 'y'], fb, OUTSIDE), fb), ['one rewrite at a time: help, feedback'], 'two rewrites: not run')
+  t.alike(problems(read(['crud/read', 'x', '--flags', 'feedback', 'y'], both, OUTSIDE), both), ['feedback: no protocol haici here'], 'its protocol not here: not rewritten, said')
   const fbh = { ...fb, haicc: haicc.haicc }
-  const on = formOf(['haicc', 'host', '--flags', 'feedback', 'y', 'z', '--', 'crud/read', 'x'], fbh, OUTSIDE)
+  const on = read(['haicc', 'host', '--flags', 'feedback', 'y', 'z', '--', 'crud/read', 'x'], fbh, OUTSIDE)
   t.alike([on.args, problems(on, fbh)], [['crud/read', 'x'], ['feedback: on the last command only (it rewrites the command it is on)']], 'on a command that passes on: its -- closes it, the next command follows; not the last, not run')
-  t.alike(formOf(['haicc', 'host', 'crud/read', 'x', '--flags', 'feedback', 'y'], fbh, OUTSIDE).args, ['crud/read', 'x', '--flags', 'feedback', 'y'], 'written after the last command\'s URI: that command\'s, passed on as written')
-  t.absent('flags' in formOf({ command: ['crud/read', 'x'], flags: { feedback: 'y' } }, fb, OUTSIDE), 'the last command\'s only: not carried down a chain')
-  t.alike(notRun({ command: ['crud/read', 'x', '--flags', 'nope'] }, ['no flag: nope']), { run: false, command: 'crud/read x --flags nope', why: ['no flag: nope'] }, 'what a command not run answers: not run, the command as typed, why')
+  t.alike(read(['haicc', 'host', 'crud/read', 'x', '--flags', 'feedback', 'y'], fbh, OUTSIDE).args, ['crud/read', 'x', '--flags', 'feedback', 'y'], 'written after the last command\'s URI: that command\'s, passed on as written')
 })
 
 test('the log: three levels of detail, info without asking; an error and a warning always', (t) => {
@@ -268,32 +256,18 @@ test('the log: three levels of detail, info without asking; an error and a warni
   t.exception(() => l.log('trace', 'x'), /not a log level: trace \(error, warn, info, verbose, debug\)/)
 })
 
-test('a record: topic, offset, timestamp, headers (empty), value; the onion; a form completed', (t) => {
-  const core = record('/haicc/terminal', { api: 'haicc', protocol: 'rest', action: 'get', uri: ['main', '.'] }, 1795312345678)
-  const envelope = wrap('/host/inbox', core)
-  t.is(core.offset, 1795312345678, 'the offset: a number, the milliseconds when it arrived')
-  t.is(envelope.offset, core.offset, 'the envelope carries its core\'s offset')
-  t.is(wrap('/other/request/pending/default', core, 1795400000000).offset, 1795400000000, 'a record from elsewhere: its own offset here, on its envelope')
+test('a record: the transport envelope around what it carries; a continuation', (t) => {
+  const request = { command: 'rest/get .' }
+  const rec = record('/host/inbox', request, 1795312345678)
+  t.alike(Object.keys(rec), ['topic', 'key', 'offset', 'timestamp', 'headers', 'value'], 'as its type has it, and its value')
+  t.alike([rec.topic, rec.key, rec.offset, rec.headers, rec.value], ['/host/inbox', null, 1795312345678, {}, request], 'the offset: a number, the milliseconds when it arrived; one level, the request inside')
+  t.ok(Number.isInteger(rec.timestamp), 'when it was made: milliseconds')
   t.is(record('/x', 1).offset, null, 'not arrived yet: none')
-  t.alike(Object.keys(envelope), ['topic', 'offset', 'timestamp', 'headers', 'value'])
-  const bare = wrap('/host/inbox', record('/reply', 1))
-  t.alike([stamp(bare, 7).offset, stamp(bare, 7).value.offset], [7, 7], 'stamped as it arrives: the envelope and its core')
+  t.is(record('/host/request/pending/default', request, 1795400000000, '1795312345678').key, '1795312345678', 'from elsewhere: its own offset here, the other\'s its key')
   t.ok(tick() < tick(), 'a clock in one process: never two the same')
-  t.alike(envelope.headers, {})
-  t.is(envelope.value, core, 'the core inside')
-  t.absent(isComplete(core))
-  const done = complete(core, { ok: true, value: { a: 1 } })
-  t.ok(isComplete(done))
-  t.alike(done.value, { ...core.value, output: { a: 1 } }, 'the request and its output')
-  t.is(done.topic, '/haicc/terminal', 'still addressed to its sender')
-  t.alike(core.value.output, undefined, 'the core itself not changed')
-  t.alike(complete(core, { ok: false, error: 'x' }).value.error, 'x')
   // a continuation: beside an output, a script for who asked to go on with
   const script = continuationOf('haicc "$HAICC_AT" service/initialise\n', 'host')
   t.alike(script, { at: 'host', script: 'haicc "$HAICC_AT" service/initialise\n' }, 'a continuation: the position it is run for, its script, shell text')
-  t.alike(complete(core, { ok: true, value: 1, continuation: script }).value, { ...core.value, output: 1, continuation: script }, 'with an output')
-  t.absent('continuation' in complete(core, { ok: false, error: 'x', continuation: script }).value, 'never with an error')
-  t.absent('continuation' in complete(core, { ok: true, value: 1, continuation: null }).value, 'none: not there')
   t.is(continuationOf('true\n').at, '.', 'run for the mrepo itself, when no position is said')
   t.exception(() => continuationOf('x'.repeat(CEILING + 1)), /not a continuation: 65537 bytes \(at most 65536\)/, 'at most CEILING bytes')
   t.exception(() => continuationOf('  \n'), /its script, shell text/, 'an empty script: none')
