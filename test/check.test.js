@@ -2,7 +2,7 @@ import test from 'brittle'
 import { readdirSync } from 'bare-fs'
 import { join, dirname } from 'bare-path'
 import { fileURLToPath } from 'bare-url'
-import { check, matches, missing, hookOf, parse, words, record, tick, continuationOf, CEILING, logger, LEVELS, FLAGS, LAYER, layerOf, modeOf, flagsOf, sorted, chained, rewrites, problems, interpret, read, lineOf, NONE, typed, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN, send } from '../index.js'
+import { check, matches, missing, hookOf, parse, words, record, tick, continuationOf, CEILING, logger, LEVELS, FLAGS, LAYER, layerOf, modeOf, flagsOf, sorted, chained, rewrites, problems, interpret, read, carrying, lineOf, NONE, typed, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN, send } from '../index.js'
 
 // The protocols as a runtime loaded them: each action's URIs (patterns
 // written at main, where the outside stands), and the states that allow it
@@ -242,22 +242,34 @@ test('the flag unit: a folder a flag, each listed, its declaration; what holds d
   t.alike(read(['haicc', 'host', 'crud/read', 'x', '--flags', 'feedback', 'y'], fbh, OUTSIDE).args, ['crud/read', 'x', '--flags', 'feedback', 'y'], 'written after the last command\'s URI: that command\'s, passed on as written')
 })
 
+test('a command sent on: the flags in force written into its line, those that hold down a chain', (t) => {
+  const haicc = { haicc: { default: 'goto', actions: { goto: { command: true } } } }
+  const held = { ...NONE, log: 'debug', physical: true, help: true }
+  t.alike(carrying(['crud/read', 'x', 'y'], held), ['crud/read', 'x', '--flags', 'log=debug', 'physical', '--', 'y'], 'a list of its own after its URI, closed; a rewrite, the last command\'s, not taken')
+  t.alike(carrying(['crud/read'], held), ['crud/read', '--flags', 'log=debug', 'physical', '--'], 'no URI written: after its first word')
+  t.alike(carrying(['crud/read', 'x', '--flags', 'log=verbose', 'feedback', 'too', 'slow'], held), ['crud/read', 'x', '--flags', 'log=debug', 'physical', 'log=verbose', 'feedback', 'too', 'slow'], 'its own list: at its head, what it writes itself after')
+  t.alike(read(carrying(['crud/read', 'x', '--flags', 'log=verbose'], held), {}, OUTSIDE).flags, { log: 'verbose', physical: true }, 'and what it writes itself holds')
+  t.alike(carrying(['haicc', 'host', 'crud/read', 'x', '--flags', 'help'], held, haicc), ['haicc', 'host', '--flags', 'log=debug', 'physical', '--', 'crud/read', 'x', '--flags', 'help'], 'a command that passes on: its own step\'s list, the next command\'s left as written')
+  t.alike(carrying(['crud/read', 'x'], NONE), ['crud/read', 'x'], 'none in force: as it was')
+})
+
 test('the log: three levels of detail, info without asking; an error and a warning always', (t) => {
   t.alike(LEVELS, ['error', 'warn', 'info', 'verbose', 'debug'])
-  const all = l => { for (const level of LEVELS) l.log(level, level); return l.entries.map(e => e.level) }
+  const all = l => { for (const level of LEVELS) l.log(level, level, 'Said.'); return l.entries.map(e => e.level) }
   t.alike(all(logger()), ['error', 'warn', 'info'], 'info: what a request gets unasked')
   t.alike(all(logger('verbose')), ['error', 'warn', 'info', 'verbose'])
   t.alike(all(logger('debug')), ['error', 'warn', 'info', 'verbose', 'debug'])
   t.alike(all(logger('silent')), ['error', 'warn', 'info'], 'no level keeps nothing: not one of the three is info')
   t.alike(all(logger('error')), ['error', 'warn', 'info'], 'nor is error a threshold')
-  const l = logger('info', () => 'now')
-  l.log('verbose', 'dropped')
+  const l = logger('info', () => 7)
+  l.log('verbose', 'dropped', 'Not kept.')
   t.is(l.level(), 'info')
   t.is(l.level('debug'), 'debug', 'the detail set from here on')
-  l.log('debug', 'kept', { ms: 3 })
+  l.log('debug', 'kept', 'Read in 3 ms.')
   t.is(l.level('nope'), 'debug', 'not a level: as it was')
-  t.alike(l.entries, [{ level: 'debug', event: 'kept', time: 'now', ms: 3 }], 'an entry: its level, its event, its time, its data')
-  t.exception(() => l.log('trace', 'x'), /not a log level: trace \(error, warn, info, verbose, debug\)/)
+  t.alike(l.entries, [{ time: 7, level: 'debug', event: 'kept', line: 'Read in 3 ms.' }], 'an entry: when, its level, its event, what happened: a line')
+  t.exception(() => l.log('info', 'x', { ms: 3 }), /not a log entry: x \(what happened, said: a line\)/, 'data is no line')
+  t.exception(() => l.log('trace', 'x', 'y'), /not a log level: trace \(error, warn, info, verbose, debug\)/)
 })
 
 test('a record: the transport envelope around what it carries; a continuation', (t) => {

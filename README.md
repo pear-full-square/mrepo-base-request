@@ -82,10 +82,11 @@ setting.
 - **A queue beside an mrepo** (`queueOf`, `keyed`): a component's side
   boxes, records taken and removed, under a key of the exchange's own:
   no stream.
-- **Logs and following**: `logger(detail)` (`log(level, event, data)`;
+- **Logs and following**: `logger(detail)` (`log(level, event, line)`: an
+  entry the request type's, `time`, `level`, `event`, and what happened,
+  a line;
   `error` and `warn` always kept, of `info`, `verbose`, `debug` as much
-  as `detail` says, `info` by default; `level(to)` sets it from there on;
-  the execute module's, until it is brought to the request);
+  as `detail` says, `info` by default; `level(to)` sets it from there on);
   `follow({ dir, name })` prints
   each record as it arrives in an mrepo's request layers and its children's
   in view, one compact line a record, its topic the full path; `settled()`:
@@ -112,7 +113,9 @@ setting.
   that stands alone a boolean, false when not written; one that takes a
   value a text, null when not written. Every function reads the map as
   written and the record the same (`chained`: those that hold down a
-  chain, for a command sent on). After the URI of
+  chain; `carrying(words, flags, protocols)`: a command sent on, or run
+  inside another, with them written into its words, at the head of its
+  own list or in one of its own after its URI). After the URI of
   an action that passes its words on (its config: `command: true`) the
   list is that step's and the next command starts after the `--` that
   closes it. A list is closed by `--` or by the end of the command,

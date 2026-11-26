@@ -22,6 +22,7 @@ The tests of mrepo-base-request, a section per file, each test by its name.
 - a script's command: its URI where its lines run, then the lines, one argument
 - flags: written after a command's URI, that step's; -- says where what follows starts
 - the flag unit: a folder a flag, each listed, its declaration; what holds down a chain; strict: what keeps a command from being run
+- a command sent on: the flags in force written into its line, those that hold down a chain
 - the log: three levels of detail, info without asking; an error and a warning always
 - a record: the transport envelope around what it carries; a continuation
 - check: an internal request, the mrepo's own: not asked whether active; an action that names its states still by them

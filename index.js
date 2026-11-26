@@ -34,7 +34,7 @@ import { nameOf } from 'mycelium-container-document'
 import { query } from 'mrepo-base-xpath'
 import { viewOf, gitdirOf, setting, isWork, SETTING, MREPOS, SCRIPTS } from './lib/view.js'
 import { relative, from, within, slashed, unslashed, segmented, joined, positionOf } from 'mycelium-uri'
-import { interpret, read, formOf, layerFor, problems, passesOn, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
+import { interpret, read, carrying, formOf, layerFor, problems, passesOn, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
 import { hookOf, hookAt, HOOKS, TRANSITIONS } from './lib/hooks.js'
 import { words, lineOf, parse, send, run as runLines } from './lib/lines.js'
 
@@ -42,7 +42,7 @@ export { follow } from './lib/follow.js'
 import { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS } from './lib/request.js'
 
 export { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS }
-export { read, lineOf, NONE, typed, MREPOS, SCRIPTS, post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, nameOf, STREAMS, declarationOf, INBOX, OUTBOX, record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
+export { read, carrying, lineOf, NONE, typed, MREPOS, SCRIPTS, post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, nameOf, STREAMS, declarationOf, INBOX, OUTBOX, record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
 
 export const PENDING = 'request/pending/default'
 export const EXECUTE = 'request/execute'
