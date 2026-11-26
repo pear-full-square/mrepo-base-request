@@ -6,7 +6,7 @@ import test from 'brittle'
 import { asked, filled, understood, noted, measured, returned, isReturned, STATUS, NONE } from '../index.js'
 
 const PROTOCOLS = { crud: { default: 'read', actions: { read: { uris: ['**'] } } }, haicc: { default: 'goto', actions: { goto: { uris: ['**'], command: true } } } }
-const EMPTY = { log: [], metrics: null, changed: [], waiting: null, path: [], continuation: null }
+const EMPTY = { log: [], metrics: null, changed: [], waiting: null, sent: null, continuation: null }
 
 test('asked: a request as it arrives, the line as typed, who asked and where its answer goes its own', (t) => {
   const r = asked('crud/read swarms', { from: 'terminal', to: 'local/host', reply: '/haicc/terminal' })
