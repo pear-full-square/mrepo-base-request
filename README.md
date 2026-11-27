@@ -159,10 +159,10 @@ setting.
   (`joined`). The URI functions are `mycelium-uri`'s, offered here too:
   `relative`, `segmented`, `joined`, `positionOf`, `slashed`.
 - **Checked by its types at the inbox** (`wrong(ctx, record)`): the
-  record without its value and the request, each asked of the schema
-  registry as the runtime reaches it (`ctx.registry`, `valid(uri,
-  value)`), strict; what is wrong said, where. No registry: nothing is
-  taken in.
+  record without its value and the request, each checked by the types
+  the mrepo holds, its `avro` layer's, as the runtime read them
+  (`ctx.types`, `valid(uri, value)`), strict; what is wrong said, where.
+  Its types not held: nothing is taken in.
 - **One way into pending** (`admit(ctx, request, { origin })`): the
   inbox's requests and internal ones (`internal(ctx, command)`, the
   mrepo's own, a line or its words) pass the same handler, validated by
