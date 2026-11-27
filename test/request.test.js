@@ -52,7 +52,7 @@ test('returned: completed, done or failed, with what is said; its attachments by
   t.ok(isReturned(d), 'completed')
   t.is(a.returned, null, 'the first unchanged')
   t.alike(returned(a, 'failed', 'Refused here: no action boot deploy.').returned.status, 'failed', 'failed: said why')
-  t.alike(returned(a, 'done', 'Two nodes at swarms.', [{ name: 'The nodes at swarms', type: 'haiccing/base-package-crud/nodes', at: 'local/host/attachments/1/0', value: [1] }]).returned.attachments, [{ name: 'The nodes at swarms', type: 'haiccing/base-package-crud/nodes', at: 'local/host/attachments/1/0' }], 'an attachment: its name, its type, where its value is; its value not in its base')
+  t.alike(returned(a, 'done', 'Two nodes at swarms.', [{ name: 'The request log', type: 'haiccing/base-package-runtime/request', at: 'local/host/request/done', value: [1] }, { name: 'A text', type: 'avro/string', content: 'CHNhaWQ=' }]).returned.attachments, [{ name: 'The request log', type: 'haiccing/base-package-runtime/request', content: null, at: 'local/host/request/done' }, { name: 'A text', type: 'avro/string', content: 'CHNhaWQ=', at: null }], 'an attachment, the wrapper: its name, its type, its content or where its value is; nothing else kept')
   t.exception(() => returned(a, 'unchanged', 'x'), /not a status/, 'another status: refused')
   t.exception(() => returned(a, 'done', ' '), /nothing said/, 'no message: refused')
   t.exception(() => returned(d, 'done', 'Again.'), /returned already/, 'completed already: refused')
