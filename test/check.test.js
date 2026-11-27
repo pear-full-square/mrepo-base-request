@@ -186,16 +186,16 @@ test('flags: written after a command\'s URI, that step\'s; -- says where what fo
   t.alike(sorted({ layer: 'request/done' }), { flags: { layer: 'request/done' }, ignored: [] })
   t.is(sorted({ layer: true }).ignored[0].why, 'layer=: not a value it takes')
   // the enumeration: one that is not there, or a value its flag does not take, is ignored, and said
-  t.alike(Object.keys(FLAGS), ['log', 'layer', 'container', 'help', 'feedback', 'physical', 'force'])
+  t.alike(Object.keys(FLAGS), ['log', 'layer', 'container', 'help', 'feedback', 'physical'])
   t.alike([modeOf({}), modeOf(undefined), modeOf({ physical: true }), modeOf({ physical: 'yes' })], ['logical', 'logical', 'physical', 'logical'], 'how a URI is read: logical when nothing is said; physical where its flag is written, as it stands alone')
   t.alike(sorted({ log: 'verbose' }), { flags: { log: 'verbose' }, ignored: [] })
   const s = sorted({ log: 'loud', nope: true, other: 'x' })
   t.alike(s.flags, {}, 'ignored')
-  t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (container, feedback, force, help, layer, log, physical)', 'no flag: other (container, feedback, force, help, layer, log, physical)'])
+  t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (container, feedback, help, layer, log, physical)', 'no flag: other (container, feedback, help, layer, log, physical)'])
   t.alike(sorted({ log: true }).ignored.map(i => i.why), ['log=: not one of info, verbose, debug'], 'a flag that takes a value, written alone')
   t.alike(sorted(undefined), { flags: {}, ignored: [] })
   // in a form: a record, a field each flag there is, each its own type
-  t.alike(NONE, { log: null, layer: null, container: false, help: false, feedback: null, physical: false, force: false }, 'none written: one that stands alone false, one that takes a value null')
+  t.alike(NONE, { log: null, layer: null, container: false, help: false, feedback: null, physical: false }, 'none written: one that stands alone false, one that takes a value null')
   t.alike(typed({ log: 'debug', physical: true }), { ...NONE, log: 'debug', physical: true }, 'those written, each its type')
   t.alike([sorted(NONE), chained(typed({ log: 'debug' })), rewrites(typed({ help: true })).map(([f]) => f), layerOf(typed({ layer: 'request' })), modeOf(NONE)], [{ flags: {}, ignored: [] }, { log: 'debug' }, ['help'], 'request', 'logical'], 'read the same as written: null and false are not written')
 })
@@ -217,7 +217,7 @@ test('the flag unit: a folder a flag, each listed, its declaration; what holds d
   t.alike([help.protocol, help.action, help.uri, help.args, help.flags], ['help', 'annotate', ['main', 'swarms'], ['crud/read', 'x'], { log: 'debug' }], 'help/annotate at its URI, its arguments the command\'s <protocol>/<action> and its own; its flag gone, the others kept')
   t.is(check(help, { service: null, protocols: both, active: { help: {} } }), null, 'the door checks the rewritten command')
   // strict: nothing of the command run, said why
-  t.alike(problems(read(['crud/read', 'x', '--flags', 'nope', 'log=loud'], both, STANDING), both), ['no flag: nope (container, feedback, force, help, layer, log, physical)', 'log=loud: not one of info, verbose, debug'], 'a flag that is none; a value its flag does not take: each said')
+  t.alike(problems(read(['crud/read', 'x', '--flags', 'nope', 'log=loud'], both, STANDING), both), ['no flag: nope (container, feedback, help, layer, log, physical)', 'log=loud: not one of info, verbose, debug'], 'a flag that is none; a value its flag does not take: each said')
   t.alike(problems(read(['crud/read', 'x', '--flags', 'help=yes'], both, STANDING), both), ['help takes no value'], 'a value its flag does not take')
   t.alike(problems(read(['crud/read', 'x', '--flags', 'help'], { crud: both.crud }, STANDING), { crud: both.crud }), ['help: no protocol help here'], 'a rewrite whose protocol is not here: not rewritten, said')
   const haicc = { ...both, haicc: { default: 'goto', actions: { goto: { command: true, uris: ['**'] } } } }
@@ -288,7 +288,7 @@ test('a record: the transport envelope around what it carries; a continuation', 
   t.exception(() => continuationOf('x'.repeat(CEILING + 1)), /not a continuation: 65537 bytes \(at most 65536\)/, 'at most CEILING bytes')
   t.exception(() => continuationOf('  \n'), /its script, shell text/, 'an empty script: none')
   t.exception(() => continuationOf([['service/start']]), /its script, shell text/, 'a list of commands: the form of before, refused')
-  t.alike(sorted({ continuation: 'start' }).ignored.map(i => i.why), ['no flag: continuation (container, feedback, force, help, layer, log, physical)'], 'no flag asks for a script: a deploy goes on with its commission hook')
+  t.alike(sorted({ continuation: 'start' }).ignored.map(i => i.why), ['no flag: continuation (container, feedback, help, layer, log, physical)'], 'no flag asks for a script: a deploy goes on with its commission hook')
 })
 
 test('check: an internal request, the mrepo\'s own: not asked whether active; an action that names its states still by them', (t) => {

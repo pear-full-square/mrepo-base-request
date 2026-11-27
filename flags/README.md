@@ -16,7 +16,6 @@ module's test fails for a folder not listed).
 - [help](help/)
 - [feedback](feedback/)
 - [physical](physical/)
-- [force](force/)
 
 ## A declaration
 
