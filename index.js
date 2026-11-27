@@ -40,8 +40,9 @@ import { words, lineOf, parse, send, run as runLines } from './lib/lines.js'
 
 export { follow } from './lib/follow.js'
 import { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS } from './lib/request.js'
+import { wrapped, opened, handed } from './lib/attachment.js'
 
-export { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS }
+export { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS, wrapped, opened, handed }
 export { read, carrying, lineOf, NONE, typed, MREPOS, SCRIPTS, post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, nameOf, STREAMS, declarationOf, INBOX, OUTBOX, record, stamp, tick, guid, continuationOf, CEILING, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, STANDING, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
 
 export const PENDING = 'request/pending/default'

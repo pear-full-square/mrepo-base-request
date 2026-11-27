@@ -42,3 +42,4 @@ The tests of mrepo-base-request, a section per file, each test by its name.
 - filled: a request whose form came filled in, no line
 - noted, measured: an entry a line, its metrics; a new request each, the one given unchanged
 - returned: completed, done or failed, with what is said; its attachments by their base
+- attachments: a value into the wrapper and back; a pointer kept; a wrapper passed on unchanged; what does not fit, a type not held: said
