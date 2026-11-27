@@ -5,7 +5,7 @@ import { tmpdir } from 'bare-os'
 import { p2pgitBackend, openRepo, writer } from 'mycelium-git'
 import { request, admit, internal, ensure, AUTHOR, principals, begin, wrong, refusal, drop, post, layer, record, asked, returned, noted, isReturned, isInternal, outboxOf, nameOf, PENDING, EXECUTE, DONE, TYPES, NONE } from '../index.js'
 
-// The schema registry as the runtime reaches it, stood in for: what it is
+// The types the mrepo holds, as the runtime read them, stood in for: what it is
 // asked noted, a value refused where it carries `odd` (the types themselves
 // and the registry are tested where they are: the runtime's package).
 const types = () => {
